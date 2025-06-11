@@ -3,17 +3,21 @@
     <div id="canvas-container" ref="canvasContainer"></div>
     <div class="controls">
       <button @click="resetGrid">Reset Grid</button>
-      <div>
+
+      <div style="display: flex; align-items: center; gap: 8px;">
         <label>Grid Size: {{ gridSize }}x{{ gridSize }}</label>
         <input type="range" min="2" max="20" v-model.number="gridSize" @change="regenerateGrid" />
       </div>
-      <div>
+
+      <div style="display: flex; align-items: center; gap: 8px;">
         <label for="colorPicker">Cell Color:</label>
         <input type="color" id="colorPicker" v-model="cellColor" @change="updateCellColors" />
       </div>
+
       <div>
         <button @click="createParallelLine">Create Parallel Line</button>
       </div>
+
       <div>
         <button @click="toggleArcticMode" :class="{ 'arctic-active': arcticMode }">
           {{ arcticMode ? 'Exit Arctic Mode' : 'Arctic Mode' }}
@@ -22,6 +26,7 @@
     </div>
   </div>
 </template>
+
 
 <script>
 import { ref, onMounted, onBeforeUnmount } from 'vue';
@@ -34,7 +39,7 @@ export default {
   setup() {
     const canvasContainer = ref(null);
     const gridSize = ref(10);
-    const cellColor = ref('#4285f4');
+    const cellColor = ref('#ffffff');
     const arcticMode = ref(false);
     
     let scene, camera, renderer, orbitControls, dragControls, raycaster, mouse;
@@ -299,7 +304,7 @@ export default {
       for (let i = 0; i < size; i++) {
         for (let j = 0; j < size; j++) {
           const geometry = new THREE.SphereGeometry(0.08, 16, 16);
-          const material = new THREE.MeshPhongMaterial({ color: 0x156289 });
+          const material = new THREE.MeshPhongMaterial({ color: 0xe0e0e0 });
           const sphere = new THREE.Mesh(geometry, material);
           
           sphere.position.set(
@@ -385,10 +390,10 @@ export default {
         const index = selectedPoints.indexOf(clickedPoint);
         if (index === -1) {
           selectedPoints.push(clickedPoint);
-          clickedPoint.material.color.set(0xff0000);
+          clickedPoint.material.color.set('#ff830f');
         } else {
           selectedPoints.splice(index, 1);
-          clickedPoint.material.color.set(0x156289);
+          clickedPoint.material.color.set(0xe0e0e0);
         }
       }
     };
@@ -406,12 +411,12 @@ export default {
       
       const geometry = new THREE.BufferGeometry();
       geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-      const material = new THREE.LineBasicMaterial({ color: 0xff6600, linewidth: 2 });
+      const material = new THREE.LineBasicMaterial({ color: '#ff830f', linewidth: 2 });
       const lineMesh = new THREE.Line(geometry, material);
       parallelLineGroup.add(lineMesh);
       
       const handleGeom = new THREE.SphereGeometry(0.1, 16, 16);
-      const handleMat = new THREE.MeshPhongMaterial({ color: 0xff6600 });
+      const handleMat = new THREE.MeshPhongMaterial({ color: '#ff830f' });
       const handle = new THREE.Mesh(handleGeom, handleMat);
       
       const center = new THREE.Vector3();
@@ -434,7 +439,7 @@ export default {
       parallelLines.push(parallelLine);
       
       selectedPoints.forEach(point => {
-        point.material.color.set(0x156289);
+        point.material.color.set('#ff830f');
       });
       selectedPoints = [];
       
@@ -554,7 +559,7 @@ export default {
       
       return geometry;
     };
-    
+     
     const fillCell = (position) => {
       const gridPos = worldToGridPosition(position);
       if (!gridPos) return;
@@ -590,6 +595,8 @@ export default {
         updateArcticMesh();
       }
     };
+    
+
     
     const onMouseDown = (event) => {
       isMouseDown = true;
@@ -729,37 +736,27 @@ export default {
     
     const updateArcticMesh = () => {
       if (!arcticMode.value) return;
-
+      
       if (arcticMesh) {
         scene.remove(arcticMesh);
         arcticMesh.geometry.dispose();
         arcticMesh.material.dispose();
         arcticMesh = null;
       }
-
+      
       const unifiedGeometry = createUnifiedGeometry();
       if (unifiedGeometry) {
-        const arcticMaterial = new THREE.MeshStandardMaterial({
+        const arcticMaterial = new THREE.MeshLambertMaterial({
           color: 0xffffff,
-          flatShading: true,
-          polygonOffset: true,
-          polygonOffsetFactor: 1, // pushes polygons back
-          polygonOffsetUnits: 1,
+          transparent: false,
+          side: THREE.DoubleSide,
+          flatShading: false
         });
-
+        
         arcticMesh = new THREE.Mesh(unifiedGeometry, arcticMaterial);
         scene.add(arcticMesh);
-
-        // Optional: subtle wireframe overlay
-        const wireframe = new THREE.LineSegments(
-          new THREE.EdgesGeometry(unifiedGeometry),
-          new THREE.LineBasicMaterial({ color: 0xd0d0d0, linewidth: 1 })
-        );
-        arcticMesh.add(wireframe);
       }
     };
-
-    
     
     const toggleArcticMode = () => {
       arcticMode.value = !arcticMode.value;
@@ -902,6 +899,14 @@ export default {
 </script>
 
 <style scoped>
+
+label {
+  font-family: 'Inter', sans-serif; /* Change to your preferred font */
+  font-size: 14px; /* Optional */
+  font-weight: 500; /* Optional */
+  color: rgb(167, 167, 167); /* Optional */
+}
+
 .grid-container {
   display: flex;
   flex-direction: column;
@@ -919,14 +924,22 @@ export default {
   padding: 10px;
   background-color: #f5f5f5;
   display: flex;
+  flex-wrap: wrap; /* handles smaller screens */
   gap: 20px;
-  align-items: center;
+  align-items: center; /* ← vertically aligns everything */
 }
+
+.controls label {
+  font-size: 13px;
+  color: #888;
+  font-weight: 400;
+}
+
 
 button {
   padding: 8px 16px;
-  background-color: #b4b4b4;
-  color: white;
+  background-color: #ffffff;
+  color: rgb(167, 167, 167);
   border: none;
   border-radius: 4px;
   cursor: pointer;
@@ -934,11 +947,11 @@ button {
 }
 
 button:hover {
-  background-color: #b4b4b4;
+  background-color: rgb(223, 223, 223);
 }
 
 .arctic-active {
-  background-color: #ff830f !important;
+  background-color: #ff8819 !important;
   box-shadow: 0 0 10px rgba(0, 188, 212, 0.5);
 }
 
@@ -946,11 +959,54 @@ button:hover {
   background-color: #0097a7 !important;
 }
 
+/* Reset native appearance */
+input[type="range"] {
+  -webkit-appearance: none;
+  background: transparent; /* so only track is visible */
+}
+
+/* Track */
+input[type="range"]::-webkit-slider-runnable-track {
+  background: #ddd; /* your track color */
+  height: 6px;
+  border-radius: 3px;
+}
+input[type="range"]::-moz-range-track {
+  background: #ddd;
+  height: 6px;
+  border-radius: 3px;
+}
+
+/* Thumb */
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  background: #ddd;   /* match track color */
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  cursor: pointer;
+  margin-top: -5px; /* vertical center (depends on track height) */
+}
+input[type="range"]::-moz-range-thumb {
+  background: #ddd;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+
 input[type="color"] {
   width: 40px;
   height: 30px;
-  border: none;
+  border: 2px solid #aaa;
   border-radius: 4px;
+  padding: 0;
+  background-color: transparent; /* so the actual selected color shows */
   cursor: pointer;
 }
+
+
+
 </style>
+
