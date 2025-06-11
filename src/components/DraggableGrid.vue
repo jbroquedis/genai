@@ -729,27 +729,37 @@ export default {
     
     const updateArcticMesh = () => {
       if (!arcticMode.value) return;
-      
+
       if (arcticMesh) {
         scene.remove(arcticMesh);
         arcticMesh.geometry.dispose();
         arcticMesh.material.dispose();
         arcticMesh = null;
       }
-      
+
       const unifiedGeometry = createUnifiedGeometry();
       if (unifiedGeometry) {
-        const arcticMaterial = new THREE.MeshLambertMaterial({
+        const arcticMaterial = new THREE.MeshStandardMaterial({
           color: 0xffffff,
-          transparent: false,
-          side: THREE.DoubleSide,
-          flatShading: false
+          flatShading: true,
+          polygonOffset: true,
+          polygonOffsetFactor: 1, // pushes polygons back
+          polygonOffsetUnits: 1,
         });
-        
+
         arcticMesh = new THREE.Mesh(unifiedGeometry, arcticMaterial);
         scene.add(arcticMesh);
+
+        // Optional: subtle wireframe overlay
+        const wireframe = new THREE.LineSegments(
+          new THREE.EdgesGeometry(unifiedGeometry),
+          new THREE.LineBasicMaterial({ color: 0xd0d0d0, linewidth: 1 })
+        );
+        arcticMesh.add(wireframe);
       }
     };
+
+    
     
     const toggleArcticMode = () => {
       arcticMode.value = !arcticMode.value;
@@ -915,7 +925,7 @@ export default {
 
 button {
   padding: 8px 16px;
-  background-color: #4285f4;
+  background-color: #b4b4b4;
   color: white;
   border: none;
   border-radius: 4px;
@@ -924,11 +934,11 @@ button {
 }
 
 button:hover {
-  background-color: #3367d6;
+  background-color: #b4b4b4;
 }
 
 .arctic-active {
-  background-color: #00bcd4 !important;
+  background-color: #ff830f !important;
   box-shadow: 0 0 10px rgba(0, 188, 212, 0.5);
 }
 
