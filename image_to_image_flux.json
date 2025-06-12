@@ -96,7 +96,7 @@
   },
   "98": {
     "inputs": {
-      "text": "ismtrcbldng hyper realistic isometric view of building made out of wood, a lot of windows, balconies, green roofs with plants and trees, ultra photo-realistic, detailed, white background",
+      "text": "",
       "clip": [
         "99",
         0
@@ -272,7 +272,7 @@
   "114": {
     "inputs": {
       "lora_name": "isometric_bld_000001500.safetensors",
-      "strength_model": 0.8000000000000002,
+      "strength_model": 0.3,
       "strength_clip": 1.0000000000000002,
       "model": [
         "108",

@@ -24,6 +24,8 @@ import io
 app = Flask(__name__)
 CORS(app)
 
+USER_COMFY_PATH = r"D:\RECURSOS\PROGRAMS\ComfyUI\ComfyUI\input"
+
 # Configuration
 COMFY_UI_URL = "http://localhost:8188"
 UPLOAD_DIR = "uploads"
@@ -134,7 +136,7 @@ def update_workflow_for_processing(workflow, image_filename, prompt_text):
         if "98" in updated_workflow:
             original_prompt = updated_workflow["98"]["inputs"]["text"]
             # Enhance the prompt with architectural keywords
-            enhanced_prompt = f"ismtrcbldng {prompt_text}, isometric view, architectural visualization, detailed building, {original_prompt}"
+            enhanced_prompt = f"ismtrcbldng, hyperrealistic photograph, white background, plain white background, {prompt_text}, isometric view, architectural visualization, detailed building, {original_prompt}"
             updated_workflow["98"]["inputs"]["text"] = enhanced_prompt
             print(f"✅ Updated prompt: {enhanced_prompt[:100]}...")
         else:
@@ -243,7 +245,7 @@ def copy_to_comfyui_input(source_path, filename):
                     # ComfyUI is running, but we need to find its directory
                     # Let's try a few more common locations
                     additional_paths = [
-                        "C:/ComfyUI_windows_portable/ComfyUI/input",
+                        USER_COMFY_PATH,
                         os.path.join(os.path.expanduser("~"), "Desktop", "ComfyUI", "input"),
                         os.path.join(os.path.expanduser("~"), "Documents", "ComfyUI", "input"),
                     ]
