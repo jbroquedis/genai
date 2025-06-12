@@ -13,7 +13,7 @@ websocket-client==1.7.0
 Pillow==10.1.0
 
 # JSON handling and utilities (built-in modules, listed for completeness)
-# uuid - built-in
+uuid==1.30
 # json - built-in  
 # base64 - built-in
 # os - built-in
