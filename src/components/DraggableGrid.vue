@@ -636,19 +636,19 @@ export default {
     
     const onMouseUp = (event) => {
       const clickDuration = Date.now() - mouseDownTime;
-      
+
       if (clickDuration < 200) {
         if (event.button === 0) {
           const rect = renderer.domElement.getBoundingClientRect();
           mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
           mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
           raycaster.setFromCamera(mouse, camera);
-          
+
           const pointIntersects = raycaster.intersectObjects(points);
           if (pointIntersects.length > 0) {
             return;
           }
-          
+
           if (previewCube.visible) {
             const targetPos = new THREE.Vector3(
               previewCube.position.x,
@@ -657,20 +657,25 @@ export default {
             );
             fillCell(targetPos);
           }
-          
+
         } else if (event.button === 2) {
+          const rect = renderer.domElement.getBoundingClientRect();
+          mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+          mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+          raycaster.setFromCamera(mouse, camera);
+
           const cellMeshes = Object.values(cellsMap.value).map(cell => cell.mesh);
           const intersects = raycaster.intersectObjects(cellMeshes);
-          
+
           if (intersects.length > 0) {
             const hitObject = intersects[0].object;
             for (const [key, cell] of Object.entries(cellsMap.value)) {
               if (cell.mesh === hitObject) {
+                cell.mesh.visible = false; // <- ensures immediate hide even before render
+                scene.remove(cell.mesh);
                 scene.remove(cell.mesh);
                 delete cellsMap.value[key];
-                if (arcticMode.value) {
-                  updateArcticMesh();
-                }
+                if (arcticMode.value) updateArcticMesh();
                 break;
               }
             }
@@ -679,9 +684,36 @@ export default {
       } else {
         orbitControls.enabled = true;
       }
-      
+
       isMouseDown = false;
     };
+
+
+
+    // ✅ MOVE THIS OUTSIDE `onMouseUp`
+    const eraseVoxelAtMouse = (event) => {
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(mouse, camera);
+
+      const cellMeshes = Object.values(cellsMap.value).map(cell => cell.mesh);
+      const intersects = raycaster.intersectObjects(cellMeshes);
+
+      if (intersects.length > 0) {
+        const hitObject = intersects[0].object;
+        for (const [key, cell] of Object.entries(cellsMap.value)) {
+          if (cell.mesh === hitObject) {
+            scene.remove(cell.mesh);
+            delete cellsMap.value[key];
+            if (arcticMode.value) updateArcticMesh();
+            break;
+          }
+        }
+      }
+    };
+   
+
     
     const onContextMenu = (event) => {
       event.preventDefault();
@@ -808,8 +840,11 @@ export default {
         if (dragControls) dragControls.enabled = false;
         
         Object.values(cellsMap.value).forEach(cell => {
-          if (cell.mesh) cell.mesh.visible = false;
+          if (cell.mesh && scene.children.includes(cell.mesh)) {
+            cell.mesh.visible = true;
+          }
         });
+
         
         scene.background = new THREE.Color(0xffffff);
         
@@ -1056,8 +1091,14 @@ export default {
     onMounted(() => {
       initThree();
       window.addEventListener('resize', handleResize);
+      // ✅ Ensure right-click erase works by preventing context menu
+      renderer.domElement.addEventListener('contextmenu', onContextMenu);
+      renderer.domElement.addEventListener('mousedown', onMouseDown);
+      renderer.domElement.addEventListener('mouseup', onMouseUp);
+      renderer.domElement.addEventListener('click', onMouseClick);
+      renderer.domElement.addEventListener('mousemove', onMouseMove);
     });
-    
+
     onBeforeUnmount(() => {
       window.removeEventListener('resize', handleResize);
       if (renderer) {
@@ -1069,7 +1110,7 @@ export default {
         renderer.dispose();
       }
     });
-    
+
     return {
       canvasContainer,
       gridSize,
@@ -1094,7 +1135,8 @@ export default {
       downloadOBJ
     };
   }
-}
+};
+
 </script>
 
 <style scoped>
