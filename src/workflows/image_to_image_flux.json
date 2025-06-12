@@ -1,0 +1,317 @@
+{
+  "91": {
+    "inputs": {
+      "samples": [
+        "109",
+        0
+      ],
+      "vae": [
+        "94",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "92": {
+    "inputs": {
+      "text": "context, background",
+      "clip": [
+        "99",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Negative Prompt)"
+    }
+  },
+  "94": {
+    "inputs": {
+      "vae_name": "ae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "Load VAE"
+    }
+  },
+  "95": {
+    "inputs": {
+      "action": "resize only",
+      "smaller_side": 0,
+      "larger_side": 1024,
+      "scale_factor": 0,
+      "resize_mode": "any",
+      "side_ratio": "4:3",
+      "crop_pad_position": 0.5,
+      "pad_feathering": 20,
+      "pixels": [
+        "100",
+        0
+      ]
+    },
+    "class_type": "ImageResize",
+    "_meta": {
+      "title": "Image Resize"
+    }
+  },
+  "96": {
+    "inputs": {
+      "positive": [
+        "97",
+        0
+      ],
+      "negative": [
+        "92",
+        0
+      ],
+      "vae": [
+        "94",
+        0
+      ],
+      "pixels": [
+        "105",
+        0
+      ]
+    },
+    "class_type": "InstructPixToPixConditioning",
+    "_meta": {
+      "title": "InstructPixToPixConditioning"
+    }
+  },
+  "97": {
+    "inputs": {
+      "guidance": 20,
+      "conditioning": [
+        "98",
+        0
+      ]
+    },
+    "class_type": "FluxGuidance",
+    "_meta": {
+      "title": "FluxGuidance"
+    }
+  },
+  "98": {
+    "inputs": {
+      "text": "ismtrcbldng hyper realistic isometric view of building made out of wood, a lot of windows, balconies, green roofs with plants and trees, ultra photo-realistic, detailed, white background",
+      "clip": [
+        "99",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Positive Prompt)"
+    }
+  },
+  "99": {
+    "inputs": {
+      "clip_name1": "t5\\t5xxl_fp8_e4m3fn.safetensors",
+      "clip_name2": "clip_l.safetensors",
+      "type": "flux",
+      "device": "default"
+    },
+    "class_type": "DualCLIPLoader",
+    "_meta": {
+      "title": "DualCLIPLoader"
+    }
+  },
+  "100": {
+    "inputs": {
+      "image": "Screenshot 2025-06-11 220507.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Load Image"
+    }
+  },
+  "105": {
+    "inputs": {
+      "low_threshold": 0.4000000000000001,
+      "high_threshold": 0.5000000000000001,
+      "image": [
+        "95",
+        0
+      ]
+    },
+    "class_type": "Canny",
+    "_meta": {
+      "title": "Canny"
+    }
+  },
+  "106": {
+    "inputs": {
+      "output_path": "[time(%Y-%m-%d)]",
+      "filename_prefix": "[time(%Y%m%d_%H%M%S)]_canny",
+      "filename_delimiter": "",
+      "filename_number_padding": 1,
+      "filename_number_start": "false",
+      "extension": "png",
+      "dpi": 300,
+      "quality": 100,
+      "optimize_image": "true",
+      "lossless_webp": "false",
+      "overwrite_mode": "false",
+      "show_history": "false",
+      "show_history_by_prefix": "true",
+      "embed_workflow": "true",
+      "show_previews": "true",
+      "images": [
+        "105",
+        0
+      ]
+    },
+    "class_type": "Image Save",
+    "_meta": {
+      "title": "Image Save"
+    }
+  },
+  "107": {
+    "inputs": {
+      "output_path": "[time(%Y-%m-%d)]",
+      "filename_prefix": "[time(%Y%m%d_%H%M%S)]_output",
+      "filename_delimiter": "",
+      "filename_number_padding": 1,
+      "filename_number_start": "false",
+      "extension": "png",
+      "dpi": 300,
+      "quality": 100,
+      "optimize_image": "true",
+      "lossless_webp": "false",
+      "overwrite_mode": "false",
+      "show_history": "false",
+      "show_history_by_prefix": "true",
+      "embed_workflow": "true",
+      "show_previews": "true",
+      "images": [
+        "118",
+        0
+      ]
+    },
+    "class_type": "Image Save",
+    "_meta": {
+      "title": "Image Save"
+    }
+  },
+  "108": {
+    "inputs": {
+      "unet_name": "flux1CannyDevFp8_v10.safetensors",
+      "weight_dtype": "fp8_e4m3fn"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "Load Diffusion Model"
+    }
+  },
+  "109": {
+    "inputs": {
+      "add_noise": "enable",
+      "noise_seed": 1064153057166793,
+      "steps": 15,
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "start_at_step": 0,
+      "end_at_step": 10000,
+      "return_with_leftover_noise": "disable",
+      "model": [
+        "114",
+        0
+      ],
+      "positive": [
+        "96",
+        0
+      ],
+      "negative": [
+        "96",
+        1
+      ],
+      "latent_image": [
+        "96",
+        2
+      ]
+    },
+    "class_type": "KSamplerAdvanced",
+    "_meta": {
+      "title": "KSampler (Advanced)"
+    }
+  },
+  "113": {
+    "inputs": {
+      "rgthree_comparer": {
+        "images": [
+          {
+            "name": "A",
+            "selected": true,
+            "url": "/api/view?filename=rgthree.compare._temp_kkroj_00013_.png&type=temp&subfolder=&rand=0.43553604441112626"
+          },
+          {
+            "name": "B",
+            "selected": true,
+            "url": "/api/view?filename=rgthree.compare._temp_kkroj_00014_.png&type=temp&subfolder=&rand=0.9382716706142578"
+          }
+        ]
+      },
+      "image_a": [
+        "105",
+        0
+      ],
+      "image_b": [
+        "91",
+        0
+      ]
+    },
+    "class_type": "Image Comparer (rgthree)",
+    "_meta": {
+      "title": "Image Comparer (rgthree)"
+    }
+  },
+  "114": {
+    "inputs": {
+      "lora_name": "isometric_bld_000001500.safetensors",
+      "strength_model": 0.8000000000000002,
+      "strength_clip": 1.0000000000000002,
+      "model": [
+        "108",
+        0
+      ],
+      "clip": [
+        "99",
+        0
+      ]
+    },
+    "class_type": "Load Lora",
+    "_meta": {
+      "title": "Load Lora"
+    }
+  },
+  "115": {
+    "inputs": {
+      "images": [
+        "105",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "Preview Image"
+    }
+  },
+  "118": {
+    "inputs": {
+      "upscale_method": "nearest-exact",
+      "scale_by": 2.0000000000000004,
+      "image": [
+        "91",
+        0
+      ]
+    },
+    "class_type": "ImageScaleBy",
+    "_meta": {
+      "title": "Upscale Image By"
+    }
+  }
+}
