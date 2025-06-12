@@ -265,4 +265,4 @@ with gr.Blocks(theme=gr.themes.Soft(), css="""
 
 # Launch the interface
 if __name__ == "__main__":
-    demo.launch(share=False, show_error=True, server_name="127.0.0.1", server_port=7860)
+    demo.launch(share=False, show_error=True)
