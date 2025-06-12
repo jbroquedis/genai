@@ -57,7 +57,7 @@ export default {
     
     const initThree = () => {
       scene = new THREE.Scene();
-      scene.background = new THREE.Color(0xf0f0f0);
+      scene.background = new THREE.Color(0xffffff);
       
       const aspect = canvasContainer.value.clientWidth / canvasContainer.value.clientHeight;
       const frustumSize = 10;
@@ -98,6 +98,24 @@ export default {
       orbitControls.enableDamping = true;
       orbitControls.dampingFactor = 0.05;
       orbitControls.enabled = false;
+
+      orbitControls = new OrbitControls(camera, renderer.domElement);
+      orbitControls.enableDamping = true;
+      orbitControls.dampingFactor = 0.05;
+      orbitControls.enabled = false;
+
+      // Lock orbit to isometric 45 degree view
+      orbitControls.minPolarAngle = Math.PI / 3.5;
+      orbitControls.maxPolarAngle = Math.PI / 3.5;
+
+      //orbitControls.minAzimuthAngle = Math.PI / 4;
+      //orbitControls.maxAzimuthAngle = Math.PI / 4;
+
+      // Allow zoom
+      orbitControls.enableZoom = true;
+
+      // Disable panning
+      orbitControls.enablePan = true;
       
       scene.add(parallelLineGroup);
       
@@ -735,27 +753,40 @@ export default {
     };
     
     const updateArcticMesh = () => {
-      if (!arcticMode.value) return;
-      
-      if (arcticMesh) {
-        scene.remove(arcticMesh);
-        arcticMesh.geometry.dispose();
-        arcticMesh.material.dispose();
-        arcticMesh = null;
-      }
-      
-      const unifiedGeometry = createUnifiedGeometry();
-      if (unifiedGeometry) {
-        const arcticMaterial = new THREE.MeshLambertMaterial({
-          color: 0xffffff,
-          transparent: false,
-          side: THREE.DoubleSide,
-          flatShading: false
-        });
-        
-        arcticMesh = new THREE.Mesh(unifiedGeometry, arcticMaterial);
-        scene.add(arcticMesh);
-      }
+  if (!arcticMode.value) return;
+
+  if (arcticMesh) {
+    scene.remove(arcticMesh);
+    arcticMesh.geometry.dispose();
+    arcticMesh.material.dispose();
+    arcticMesh = null;
+  }
+
+  const arcticEdges = scene.getObjectByName('arcticEdges');
+  if (arcticEdges) {
+    scene.remove(arcticEdges);
+    arcticEdges.geometry.dispose();
+    arcticEdges.material.dispose();
+  }
+
+  const unifiedGeometry = createUnifiedGeometry();
+  if (unifiedGeometry) {
+    // White material without shading
+    const arcticMaterial = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      side: THREE.DoubleSide
+    });
+
+    arcticMesh = new THREE.Mesh(unifiedGeometry, arcticMaterial);
+    scene.add(arcticMesh);
+
+    // Add black edges
+    const edgesGeometry = new THREE.EdgesGeometry(unifiedGeometry, 45); // ← use larger angle here!
+    const edgesMaterial = new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 1 });
+    const edgesLines = new THREE.LineSegments(edgesGeometry, edgesMaterial);
+    edgesLines.name = 'arcticEdges';
+    scene.add(edgesLines);
+    }
     };
     
     const toggleArcticMode = () => {
@@ -773,7 +804,7 @@ export default {
           if (cell.mesh) cell.mesh.visible = false;
         });
         
-        scene.background = new THREE.Color(0xf8fbff);
+        scene.background = new THREE.Color(0xffffff);
         
         const arcticLight = new THREE.DirectionalLight(0xffffff, 0.8);
         arcticLight.position.set(0, 10, 5);
@@ -790,6 +821,12 @@ export default {
           arcticMesh.material.dispose();
           arcticMesh = null;
         }
+        const arcticEdges = scene.getObjectByName('arcticEdges');
+        if (arcticEdges) {
+          scene.remove(arcticEdges);
+          arcticEdges.geometry.dispose();
+          arcticEdges.material.dispose();
+        }
         
         if (gridObject) gridObject.visible = true;
         if (parallelLineGroup) parallelLineGroup.visible = true;
@@ -799,7 +836,7 @@ export default {
           if (cell.mesh) cell.mesh.visible = true;
         });
         
-        scene.background = new THREE.Color(0xf0f0f0);
+        scene.background = new THREE.Color(0xffffff);
         
         const arcticLight = scene.getObjectByName('arcticLight');
         if (arcticLight) scene.remove(arcticLight);
