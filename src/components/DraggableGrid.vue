@@ -1,6 +1,21 @@
 <template>
   <div class="grid-container">
-    <div id="canvas-container" ref="canvasContainer"></div>
+    <!-- Main 3D Canvas -->
+    <div id="canvas-container" ref="canvasContainer" v-show="currentView === 'editor'"></div>
+    
+    <!-- Comparison View -->
+    <div v-if="currentView === 'comparison'" class="comparison-container">
+      <ComparisonSlider 
+        :before-image="currentSnapshot" 
+        :after-image="generatedImage"
+        @back-to-editor="currentView = 'editor'"
+      />
+    </div>
+
+    <!-- Processing Modal -->
+    <ProcessingModal v-if="isProcessing" :stage="processingStage" />
+    
+    <!-- Controls -->
     <div class="controls">
       <button @click="resetGrid">Reset Grid</button>
 
@@ -23,37 +38,76 @@
           {{ arcticMode ? 'Exit Arctic Mode' : 'Arctic Mode' }}
         </button>
       </div>
+
+      <!-- AI Generation -->
+      <div class="ai-controls">
+        <input 
+          v-model="aiPrompt" 
+          type="text" 
+          placeholder="Enter architectural style prompt..."
+          class="prompt-input"
+        />
+        <button 
+          @click="generateAIBuilding" 
+          :disabled="isProcessing || Object.keys(cellsMap).length === 0"
+          class="generate-btn"
+        >
+          {{ isProcessing ? 'Processing...' : 'Generate AI Building' }}
+        </button>
+      </div>
+
+      <!-- Export Controls -->
+      <div class="export-controls">
+        <button @click="downloadSnapshot">Download Image</button>
+        <button @click="downloadOBJ" :disabled="Object.keys(cellsMap).length === 0">Download 3D Model</button>
+      </div>
     </div>
   </div>
 </template>
 
-
 <script>
-import { ref, onMounted, onBeforeUnmount } from 'vue';
+import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { DragControls } from 'three/examples/jsm/controls/DragControls.js';
+import { OBJExporter } from 'three/examples/jsm/exporters/OBJExporter.js';
+import ComparisonSlider from './ComparisonSlider.vue';
+import ProcessingModal from './ProcessingModal.vue';
 
 export default {
   name: 'DraggableGrid',
+  components: {
+    ComparisonSlider,
+    ProcessingModal
+  },
   setup() {
+    // Reactive Vue variables
     const canvasContainer = ref(null);
     const gridSize = ref(10);
     const cellColor = ref('#ffffff');
     const arcticMode = ref(false);
+    const aiPrompt = ref('modern architectural building, clean lines, contemporary design');
+    const currentView = ref('editor');
+    const isProcessing = ref(false);
+    const processingStage = ref('');
+    const currentSnapshot = ref('');
+    const generatedImage = ref('');
+    const cellsMap = ref({});
+    const selectedPoints = ref([]);
+    const parallelLines = ref([]);
     
+    // Non-reactive Three.js variables
     let scene, camera, renderer, orbitControls, dragControls, raycaster, mouse;
     let points = [];
     let lines = [];
-    let parallelLines = [];
     let gridObject;
-    let cellsMap = {};
     let isMouseDown = false;
     let mouseDownTime = 0;
-    let selectedPoints = [];
     let parallelLineGroup = new THREE.Group();
     let arcticMesh = null;
     let previewCube = null;
+    
+    const COMFY_API_URL = 'http://localhost:5000';
     
     const initThree = () => {
       scene = new THREE.Scene();
@@ -79,7 +133,7 @@ export default {
       );
       camera.lookAt(0, 0, 0);
       
-      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
       renderer.setSize(canvasContainer.value.clientWidth, canvasContainer.value.clientHeight);
       canvasContainer.value.appendChild(renderer.domElement);
       
@@ -98,30 +152,11 @@ export default {
       orbitControls.enableDamping = true;
       orbitControls.dampingFactor = 0.05;
       orbitControls.enabled = false;
-
-      orbitControls = new OrbitControls(camera, renderer.domElement);
-      orbitControls.enableDamping = true;
-      orbitControls.dampingFactor = 0.05;
-      orbitControls.enabled = false;
-
-      // Lock orbit to isometric 45 degree view
-      // orbitControls.minPolarAngle = Math.PI / 3.5;
-      // orbitControls.maxPolarAngle = Math.PI / 3.5;
-
-      //orbitControls.minAzimuthAngle = Math.PI / 4;
-      //orbitControls.maxAzimuthAngle = Math.PI / 4;
-
-      // Allow zoom
       orbitControls.enableZoom = true;
-
-      // Disable panning
       orbitControls.enablePan = true;
       
       scene.add(parallelLineGroup);
-      
-      // Create preview cube with corner points only
       createPreviewCube();
-      
       createGrid();
       setupDragControls();
       
@@ -134,20 +169,17 @@ export default {
       animate();
     };
     
-    // Create preview cube with edge lines only (no diagonals)
     const createPreviewCube = () => {
       previewCube = new THREE.Group();
       
-      // Create a wireframe box with only the 12 edges (no diagonals)
-      // Make it slightly larger to ensure it's visible above voxels
       const geometry = new THREE.BoxGeometry(0.85, 0.55, 0.85);
       const edges = new THREE.EdgesGeometry(geometry);
       const material = new THREE.LineBasicMaterial({
-        color: 0xcccccc, // Light grey
+        color: 0xcccccc,
         transparent: true,
         opacity: 0.9,
         linewidth: 2,
-        depthTest: false // This ensures it renders on top
+        depthTest: false
       });
       
       const wireframe = new THREE.LineSegments(edges, material);
@@ -170,26 +202,19 @@ export default {
       
       raycaster.setFromCamera(mouse, camera);
       
-      // Check for voxel stacking
-      const cellMeshes = Object.values(cellsMap).map(cell => cell.mesh);
+      const cellMeshes = Object.values(cellsMap.value).map(cell => cell.mesh);
       let intersects = raycaster.intersectObjects(cellMeshes);
       
       if (intersects.length > 0) {
         const hitObject = intersects[0].object;
-        for (const cell of Object.values(cellsMap)) {
+        for (const cell of Object.values(cellsMap.value)) {
           if (cell.mesh === hitObject) {
-            // Position preview ABOVE the hit voxel
-            const previewY = cell.worldPosition.y + 0.5 + 0.25; // existing voxel height + half new voxel height
-            
+            const previewY = cell.worldPosition.y + 0.5 + 0.25;
             const newVoxelBaseY = cell.worldPosition.y + 0.5;
             const checkPos = new THREE.Vector3(cell.worldPosition.x, newVoxelBaseY, cell.worldPosition.z);
             
             if (!findCellAtPosition(checkPos)) {
-              previewCube.position.set(
-                cell.worldPosition.x,
-                previewY,
-                cell.worldPosition.z
-              );
+              previewCube.position.set(cell.worldPosition.x, previewY, cell.worldPosition.z);
               previewCube.visible = true;
               return;
             }
@@ -198,7 +223,6 @@ export default {
         }
       }
       
-      // Check for ground placement - snap to grid cell centers, not grid points
       const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
       const intersection = new THREE.Vector3();
       
@@ -206,20 +230,16 @@ export default {
         const gridSpacing = 1;
         const halfSize = (gridSize.value - 1) * gridSpacing / 2;
         
-        // Find which grid cell the intersection point is in
         const cellI = Math.floor((intersection.x + halfSize + gridSpacing/2) / gridSpacing);
         const cellJ = Math.floor((intersection.z + halfSize + gridSpacing/2) / gridSpacing);
         
-        // Check if we're within the valid grid bounds
         if (cellI >= 0 && cellI < gridSize.value - 1 && cellJ >= 0 && cellJ < gridSize.value - 1) {
-          // Calculate the center of this grid cell
           const cellCenterX = (cellI * gridSpacing) - halfSize + (gridSpacing / 2);
           const cellCenterZ = (cellJ * gridSpacing) - halfSize + (gridSpacing / 2);
           
           const groundPos = new THREE.Vector3(cellCenterX, 0, cellCenterZ);
           
           if (!findCellAtPosition(groundPos)) {
-            // For ground level: voxel base at y=0, center at y=0.25
             previewCube.position.set(cellCenterX, 0.25, cellCenterZ);
             previewCube.visible = true;
             return;
@@ -229,9 +249,10 @@ export default {
       
       previewCube.visible = false;
     };
+
     const findCellAtPosition = (position) => {
       const tolerance = 0.1;
-      for (const cell of Object.values(cellsMap)) {
+      for (const cell of Object.values(cellsMap.value)) {
         if (cell.worldPosition.distanceTo(position) < tolerance) {
           return cell;
         }
@@ -246,7 +267,7 @@ export default {
       }
       
       const draggableObjects = [...points];
-      parallelLines.forEach(plObj => {
+      parallelLines.value.forEach(plObj => {
         if (plObj.handle) {
           draggableObjects.push(plObj.handle);
         }
@@ -256,7 +277,7 @@ export default {
       
       dragControls.addEventListener('dragstart', (event) => {
         orbitControls.enabled = false;
-        const parallelLine = parallelLines.find(pl => pl.handle === event.object);
+        const parallelLine = parallelLines.value.find(pl => pl.handle === event.object);
         if (parallelLine) {
           parallelLine.isDragging = true;
         }
@@ -271,7 +292,7 @@ export default {
           updateCells();
           updateParallelLinesFromPoints();
         } else {
-          const parallelLine = parallelLines.find(pl => pl.handle === event.object);
+          const parallelLine = parallelLines.value.find(pl => pl.handle === event.object);
           if (parallelLine && parallelLine.isDragging) {
             const offset = event.object.position.clone().sub(parallelLine.lastPosition);
             offset.y = 0;
@@ -292,7 +313,7 @@ export default {
       
       dragControls.addEventListener('dragend', (event) => {
         orbitControls.enabled = false;
-        const parallelLine = parallelLines.find(pl => pl.handle === event.object);
+        const parallelLine = parallelLines.value.find(pl => pl.handle === event.object);
         if (parallelLine) {
           parallelLine.isDragging = false;
         }
@@ -304,12 +325,12 @@ export default {
         scene.remove(gridObject);
         points = [];
         lines = [];
-        Object.values(cellsMap).forEach(cell => {
+        Object.values(cellsMap.value).forEach(cell => {
           if (cell.mesh && cell.mesh.parent) {
             cell.mesh.parent.remove(cell.mesh);
           }
         });
-        cellsMap = {};
+        cellsMap.value = {};
       }
       
       gridObject = new THREE.Group();
@@ -325,12 +346,7 @@ export default {
           const material = new THREE.MeshPhongMaterial({ color: 0xe0e0e0 });
           const sphere = new THREE.Mesh(geometry, material);
           
-          sphere.position.set(
-            i * spacing - halfSize,
-            0,
-            j * spacing - halfSize
-          );
-          
+          sphere.position.set(i * spacing - halfSize, 0, j * spacing - halfSize);
           sphere.userData = { gridX: i, gridZ: j };
           
           gridObject.add(sphere);
@@ -338,7 +354,6 @@ export default {
         }
       }
       
-      // Create lines (horizontal and vertical)
       for (let i = 0; i < size; i++) {
         for (let j = 0; j < size - 1; j++) {
           const pointA = points[i * size + j];
@@ -379,8 +394,8 @@ export default {
         }
       }
       
-      selectedPoints = [];
-      parallelLines.forEach(pl => {
+      selectedPoints.value = [];
+      parallelLines.value.forEach(pl => {
         if (pl.line && pl.line.parent) {
           pl.line.parent.remove(pl.line);
         }
@@ -388,7 +403,7 @@ export default {
           pl.handle.parent.remove(pl.handle);
         }
       });
-      parallelLines = [];
+      parallelLines.value = [];
       
       setupDragControls();
     };
@@ -405,25 +420,25 @@ export default {
       
       if (intersects.length > 0) {
         const clickedPoint = intersects[0].object;
-        const index = selectedPoints.indexOf(clickedPoint);
+        const index = selectedPoints.value.indexOf(clickedPoint);
         if (index === -1) {
-          selectedPoints.push(clickedPoint);
+          selectedPoints.value.push(clickedPoint);
           clickedPoint.material.color.set('#ff830f');
         } else {
-          selectedPoints.splice(index, 1);
+          selectedPoints.value.splice(index, 1);
           clickedPoint.material.color.set(0xe0e0e0);
         }
       }
     };
     
     const createParallelLine = () => {
-      if (selectedPoints.length < 3) {
-        console.log("Need at least 3 points to create a parallel line");
+      if (selectedPoints.value.length < 3) {
+        alert("Need at least 3 points to create a parallel line");
         return;
       }
       
       const positions = [];
-      selectedPoints.forEach(point => {
+      selectedPoints.value.forEach(point => {
         positions.push(point.position.x, point.position.y, point.position.z);
       });
       
@@ -438,10 +453,10 @@ export default {
       const handle = new THREE.Mesh(handleGeom, handleMat);
       
       const center = new THREE.Vector3();
-      selectedPoints.forEach(point => {
+      selectedPoints.value.forEach(point => {
         center.add(point.position);
       });
-      center.divideScalar(selectedPoints.length);
+      center.divideScalar(selectedPoints.value.length);
       handle.position.copy(center);
       
       parallelLineGroup.add(handle);
@@ -449,17 +464,17 @@ export default {
       const parallelLine = {
         line: lineMesh,
         handle: handle,
-        points: [...selectedPoints],
+        points: [...selectedPoints.value],
         lastPosition: handle.position.clone(),
         isDragging: false
       };
       
-      parallelLines.push(parallelLine);
+      parallelLines.value.push(parallelLine);
       
-      selectedPoints.forEach(point => {
+      selectedPoints.value.forEach(point => {
         point.material.color.set('#ff830f');
       });
-      selectedPoints = [];
+      selectedPoints.value = [];
       
       setupDragControls();
     };
@@ -494,7 +509,7 @@ export default {
     };
     
     const updateParallelLinesFromPoints = () => {
-      parallelLines.forEach(parallelLine => {
+      parallelLines.value.forEach(parallelLine => {
         updateParallelLine(parallelLine);
       });
     };
@@ -585,7 +600,7 @@ export default {
       const height = Math.round(position.y * 2) / 2;
       const key = getCellKey(gridPos.gridX, gridPos.gridZ, height);
       
-      if (cellsMap[key]) return;
+      if (cellsMap.value[key]) return;
       
       const geometry = createCellGeometry(gridPos.corners, height);
       const color = new THREE.Color(cellColor.value);
@@ -602,7 +617,7 @@ export default {
         mesh.visible = false;
       }
       
-      cellsMap[key] = {
+      cellsMap.value[key] = {
         gridPosition: gridPos,
         worldPosition: new THREE.Vector3(position.x, height, position.z),
         mesh,
@@ -614,8 +629,6 @@ export default {
       }
     };
     
-
-    
     const onMouseDown = (event) => {
       isMouseDown = true;
       mouseDownTime = Date.now();
@@ -625,7 +638,7 @@ export default {
       const clickDuration = Date.now() - mouseDownTime;
       
       if (clickDuration < 200) {
-        if (event.button === 0) { // Left click
+        if (event.button === 0) {
           const rect = renderer.domElement.getBoundingClientRect();
           mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
           mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
@@ -633,10 +646,9 @@ export default {
           
           const pointIntersects = raycaster.intersectObjects(points);
           if (pointIntersects.length > 0) {
-            return; // Point selection handled by onMouseClick
+            return;
           }
           
-          // Use preview position for placement
           if (previewCube.visible) {
             const targetPos = new THREE.Vector3(
               previewCube.position.x,
@@ -646,16 +658,16 @@ export default {
             fillCell(targetPos);
           }
           
-        } else if (event.button === 2) { // Right click
-          const cellMeshes = Object.values(cellsMap).map(cell => cell.mesh);
+        } else if (event.button === 2) {
+          const cellMeshes = Object.values(cellsMap.value).map(cell => cell.mesh);
           const intersects = raycaster.intersectObjects(cellMeshes);
           
           if (intersects.length > 0) {
             const hitObject = intersects[0].object;
-            for (const [key, cell] of Object.entries(cellsMap)) {
+            for (const [key, cell] of Object.entries(cellsMap.value)) {
               if (cell.mesh === hitObject) {
                 scene.remove(cell.mesh);
-                delete cellsMap[key];
+                delete cellsMap.value[key];
                 if (arcticMode.value) {
                   updateArcticMesh();
                 }
@@ -692,7 +704,7 @@ export default {
     };
     
     const updateCells = () => {
-      Object.values(cellsMap).forEach(cell => {
+      Object.values(cellsMap.value).forEach(cell => {
         if (!cell.gridPosition || !cell.gridPosition.corners) return;
         
         const height = cell.height;
@@ -706,26 +718,24 @@ export default {
     
     const updateCellColors = () => {
       const color = new THREE.Color(cellColor.value);
-      Object.values(cellsMap).forEach(cell => {
+      Object.values(cellsMap.value).forEach(cell => {
         if (cell.mesh && cell.mesh.material) {
           cell.mesh.material.color = color;
         }
       });
     };
     
-    // Simple Arctic Mode
     const createUnifiedGeometry = () => {
-      if (Object.keys(cellsMap).length === 0) return null;
+      if (Object.keys(cellsMap.value).length === 0) return null;
       
       const vertices = [];
       const indices = [];
       let vertexIndex = 0;
       
-      Object.values(cellsMap).forEach(cell => {
+      Object.values(cellsMap.value).forEach(cell => {
         const positions = cell.mesh.geometry.attributes.position.array;
         const cellIndices = cell.mesh.geometry.index.array;
         
-        // Add vertices
         for (let i = 0; i < positions.length; i += 3) {
           vertices.push(
             positions[i] + cell.mesh.position.x,
@@ -734,7 +744,6 @@ export default {
           );
         }
         
-        // Add indices with offset
         for (let i = 0; i < cellIndices.length; i++) {
           indices.push(cellIndices[i] + vertexIndex);
         }
@@ -753,40 +762,38 @@ export default {
     };
     
     const updateArcticMesh = () => {
-  if (!arcticMode.value) return;
+      if (!arcticMode.value) return;
 
-  if (arcticMesh) {
-    scene.remove(arcticMesh);
-    arcticMesh.geometry.dispose();
-    arcticMesh.material.dispose();
-    arcticMesh = null;
-  }
+      if (arcticMesh) {
+        scene.remove(arcticMesh);
+        arcticMesh.geometry.dispose();
+        arcticMesh.material.dispose();
+        arcticMesh = null;
+      }
 
-  const arcticEdges = scene.getObjectByName('arcticEdges');
-  if (arcticEdges) {
-    scene.remove(arcticEdges);
-    arcticEdges.geometry.dispose();
-    arcticEdges.material.dispose();
-  }
+      const arcticEdges = scene.getObjectByName('arcticEdges');
+      if (arcticEdges) {
+        scene.remove(arcticEdges);
+        arcticEdges.geometry.dispose();
+        arcticEdges.material.dispose();
+      }
 
-  const unifiedGeometry = createUnifiedGeometry();
-  if (unifiedGeometry) {
-    // White material without shading
-    const arcticMaterial = new THREE.MeshBasicMaterial({
-      color: 0xffffff,
-      side: THREE.DoubleSide
-    });
+      const unifiedGeometry = createUnifiedGeometry();
+      if (unifiedGeometry) {
+        const arcticMaterial = new THREE.MeshBasicMaterial({
+          color: 0xffffff,
+          side: THREE.DoubleSide
+        });
 
-    arcticMesh = new THREE.Mesh(unifiedGeometry, arcticMaterial);
-    scene.add(arcticMesh);
+        arcticMesh = new THREE.Mesh(unifiedGeometry, arcticMaterial);
+        scene.add(arcticMesh);
 
-    // Add black edges
-    const edgesGeometry = new THREE.EdgesGeometry(unifiedGeometry, 45); // ← use larger angle here!
-    const edgesMaterial = new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 1 });
-    const edgesLines = new THREE.LineSegments(edgesGeometry, edgesMaterial);
-    edgesLines.name = 'arcticEdges';
-    scene.add(edgesLines);
-    }
+        const edgesGeometry = new THREE.EdgesGeometry(unifiedGeometry, 45);
+        const edgesMaterial = new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 1 });
+        const edgesLines = new THREE.LineSegments(edgesGeometry, edgesMaterial);
+        edgesLines.name = 'arcticEdges';
+        scene.add(edgesLines);
+      }
     };
     
     const toggleArcticMode = () => {
@@ -800,7 +807,7 @@ export default {
         if (previewCube) previewCube.visible = false;
         if (dragControls) dragControls.enabled = false;
         
-        Object.values(cellsMap).forEach(cell => {
+        Object.values(cellsMap.value).forEach(cell => {
           if (cell.mesh) cell.mesh.visible = false;
         });
         
@@ -832,7 +839,7 @@ export default {
         if (parallelLineGroup) parallelLineGroup.visible = true;
         if (dragControls) dragControls.enabled = true;
         
-        Object.values(cellsMap).forEach(cell => {
+        Object.values(cellsMap.value).forEach(cell => {
           if (cell.mesh) cell.mesh.visible = true;
         });
         
@@ -874,19 +881,19 @@ export default {
         toggleArcticMode();
       }
       
-      Object.values(cellsMap).forEach(cell => {
+      Object.values(cellsMap.value).forEach(cell => {
         if (cell.mesh) {
           scene.remove(cell.mesh);
         }
       });
-      cellsMap = {};
+      cellsMap.value = {};
       
-      selectedPoints.forEach(point => {
-        point.material.color.set(0x156289);
+      selectedPoints.value.forEach(point => {
+        point.material.color.set(0xe0e0e0);
       });
-      selectedPoints = [];
+      selectedPoints.value = [];
       
-      parallelLines.forEach(pl => {
+      parallelLines.value.forEach(pl => {
         if (pl.line && pl.line.parent) {
           pl.line.parent.remove(pl.line);
         }
@@ -894,13 +901,156 @@ export default {
           pl.handle.parent.remove(pl.handle);
         }
       });
-      parallelLines = [];
+      parallelLines.value = [];
       
       createGrid();
     };
     
     const regenerateGrid = () => {
       resetGrid();
+    };
+
+    const captureArcticSnapshot = async () => {
+      const wasInArcticMode = arcticMode.value;
+      
+      if (!wasInArcticMode) {
+        toggleArcticMode();
+        await nextTick();
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      
+      const previewWasVisible = previewCube.visible;
+      previewCube.visible = false;
+      
+      renderer.render(scene, camera);
+      const dataURL = renderer.domElement.toDataURL('image/png', 1.0);
+      
+      previewCube.visible = previewWasVisible;
+      
+      if (!wasInArcticMode) {
+        toggleArcticMode();
+      }
+      
+      return dataURL;
+    };
+    
+    const processWithComfyUI = async (imageDataURL) => {
+      try {
+        const response = await fetch(`${COMFY_API_URL}/api/process-base64`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            image: imageDataURL,
+            prompt: aiPrompt.value
+          })
+        });
+        
+        if (!response.ok) {
+          throw new Error(`API error: ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        
+        if (!result.success) {
+          throw new Error(result.error || 'Processing failed');
+        }
+        
+        return result.output_image;
+        
+      } catch (error) {
+        console.error('ComfyUI processing error:', error);
+        throw error;
+      }
+    };
+    
+    const generateAIBuilding = async () => {
+      if (Object.keys(cellsMap.value).length === 0) {
+        alert('Please create some voxels first!');
+        return;
+      }
+      
+      try {
+        isProcessing.value = true;
+        
+        processingStage.value = 'Capturing snapshot...';
+        const snapshot = await captureArcticSnapshot();
+        currentSnapshot.value = snapshot;
+        
+        processingStage.value = 'Processing with AI...';
+        const result = await processWithComfyUI(snapshot);
+        generatedImage.value = result;
+        
+        processingStage.value = 'Complete!';
+        
+        setTimeout(() => {
+          isProcessing.value = false;
+          currentView.value = 'comparison';
+        }, 500);
+        
+      } catch (error) {
+        console.error('AI generation failed:', error);
+        alert(`AI generation failed: ${error.message}`);
+        isProcessing.value = false;
+      }
+    };
+    
+    const downloadSnapshot = async () => {
+      try {
+        const snapshot = await captureArcticSnapshot();
+        downloadDataURL(snapshot, `isogen_snapshot_${Date.now()}.png`);
+      } catch (error) {
+        console.error('Snapshot download failed:', error);
+      }
+    };
+    
+    const downloadOBJ = () => {
+      if (Object.keys(cellsMap.value).length === 0) {
+        alert('No voxels to export!');
+        return;
+      }
+      
+      try {
+        const exportGroup = new THREE.Group();
+        Object.values(cellsMap.value).forEach(cell => {
+          if (cell.mesh) {
+            const meshClone = cell.mesh.clone();
+            exportGroup.add(meshClone);
+          }
+        });
+        
+        const exporter = new OBJExporter();
+        const objData = exporter.parse(exportGroup);
+        
+        const blob = new Blob([objData], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        downloadURL(url, `isogen_model_${Date.now()}.obj`);
+        
+        URL.revokeObjectURL(url);
+        
+      } catch (error) {
+        console.error('OBJ export failed:', error);
+        alert('3D model export failed.');
+      }
+    };
+    
+    const downloadDataURL = (dataURL, filename) => {
+      const link = document.createElement('a');
+      link.download = filename;
+      link.href = dataURL;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    };
+    
+    const downloadURL = (url, filename) => {
+      const link = document.createElement('a');
+      link.download = filename;
+      link.href = url;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     };
     
     onMounted(() => {
@@ -925,23 +1075,34 @@ export default {
       gridSize,
       cellColor,
       arcticMode,
+      aiPrompt,
+      currentView,
+      isProcessing,
+      processingStage,
+      currentSnapshot,
+      generatedImage,
+      cellsMap,
+      selectedPoints,
+      parallelLines,
       resetGrid,
       regenerateGrid,
       updateCellColors,
       createParallelLine,
-      toggleArcticMode
+      toggleArcticMode,
+      generateAIBuilding,
+      downloadSnapshot,
+      downloadOBJ
     };
   }
 }
 </script>
 
 <style scoped>
-
 label {
-  font-family: 'Inter', sans-serif; /* Change to your preferred font */
-  font-size: 14px; /* Optional */
-  font-weight: 500; /* Optional */
-  color: rgb(167, 167, 167); /* Optional */
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: rgb(167, 167, 167);
 }
 
 .grid-container {
@@ -957,21 +1118,60 @@ label {
   position: relative;
 }
 
+.comparison-container {
+  flex-grow: 1;
+  min-height: 500px;
+  position: relative;
+}
+
 .controls {
   padding: 10px;
   background-color: #f5f5f5;
   display: flex;
-  flex-wrap: wrap; /* handles smaller screens */
+  flex-wrap: wrap;
   gap: 20px;
-  align-items: center; /* ← vertically aligns everything */
+  align-items: center;
 }
 
-.controls label {
-  font-size: 13px;
-  color: #888;
-  font-weight: 400;
+.ai-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
+.prompt-input {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  min-width: 200px;
+  font-size: 14px;
+}
+
+.generate-btn {
+  padding: 8px 16px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.3s ease;
+}
+
+.generate-btn:hover:not(:disabled) {
+  background-color: #45a049;
+}
+
+.generate-btn:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.export-controls {
+  display: flex;
+  gap: 10px;
+}
 
 button {
   padding: 8px 16px;
@@ -996,34 +1196,33 @@ button:hover {
   background-color: #0097a7 !important;
 }
 
-/* Reset native appearance */
 input[type="range"] {
   -webkit-appearance: none;
-  background: transparent; /* so only track is visible */
+  background: transparent;
 }
 
-/* Track */
 input[type="range"]::-webkit-slider-runnable-track {
-  background: #ddd; /* your track color */
+  background: #ddd;
   height: 6px;
   border-radius: 3px;
 }
+
 input[type="range"]::-moz-range-track {
   background: #ddd;
   height: 6px;
   border-radius: 3px;
 }
 
-/* Thumb */
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
-  background: #ddd;   /* match track color */
+  background: #ddd;
   width: 16px;
   height: 16px;
   border-radius: 50%;
   cursor: pointer;
-  margin-top: -5px; /* vertical center (depends on track height) */
+  margin-top: -5px;
 }
+
 input[type="range"]::-moz-range-thumb {
   background: #ddd;
   width: 16px;
@@ -1032,18 +1231,28 @@ input[type="range"]::-moz-range-thumb {
   cursor: pointer;
 }
 
-
 input[type="color"] {
   width: 40px;
   height: 30px;
   border: 2px solid #aaa;
   border-radius: 4px;
   padding: 0;
-  background-color: transparent; /* so the actual selected color shows */
+  background-color: transparent;
   cursor: pointer;
 }
 
-
-
+@media (max-width: 768px) {
+  .controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .ai-controls {
+    flex-direction: column;
+  }
+  
+  .prompt-input {
+    min-width: 100%;
+  }
+}
 </style>
-

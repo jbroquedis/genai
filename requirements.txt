@@ -1,6 +1,26 @@
-gradio>=4.0.0
-requests>=2.31.0
-Pillow>=10.0.0
-numpy>=1.24.0
-websocket-client>=1.6.0
-urllib3>=2.0.0
+# isOGen Backend Requirements
+# Python dependencies for ComfyUI integration and Flask API
+
+# Web Framework
+Flask==3.0.0
+Flask-CORS==4.0.0
+
+# HTTP Requests and WebSocket
+requests==2.31.0
+websocket-client==1.7.0
+
+# Image Processing
+Pillow==10.1.0
+
+# JSON handling and utilities (built-in modules, listed for completeness)
+# uuid - built-in
+# json - built-in  
+# base64 - built-in
+# os - built-in
+# datetime - built-in
+# time - built-in
+# threading - built-in
+
+# Development and Testing (optional)
+# pytest==7.4.3
+# pytest-flask==1.3.0
