@@ -105,8 +105,8 @@ export default {
       orbitControls.enabled = false;
 
       // Lock orbit to isometric 45 degree view
-      orbitControls.minPolarAngle = Math.PI / 3.5;
-      orbitControls.maxPolarAngle = Math.PI / 3.5;
+      // orbitControls.minPolarAngle = Math.PI / 3.5;
+      // orbitControls.maxPolarAngle = Math.PI / 3.5;
 
       //orbitControls.minAzimuthAngle = Math.PI / 4;
       //orbitControls.maxAzimuthAngle = Math.PI / 4;
