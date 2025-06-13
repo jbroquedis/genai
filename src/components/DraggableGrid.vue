@@ -124,6 +124,16 @@ export default {
       renderer.setSize(canvasContainer.value.clientWidth, canvasContainer.value.clientHeight);
       canvasContainer.value.appendChild(renderer.domElement);
       
+      const loader = new THREE.CubeTextureLoader();
+      const envMap = loader.load([
+        'px.jpg', 'nx.jpg',
+        'py.jpg', 'ny.jpg',
+        'pz.jpg', 'nz.jpg'
+      ]);
+      scene.environment = envMap;
+      //scene.background = envMap; // optional
+
+
       const ambientLight = new THREE.AmbientLight(0x404040);
       ambientLight.name = 'ambientLight';
       scene.add(ambientLight);
@@ -330,7 +340,13 @@ export default {
       for (let i = 0; i < size; i++) {
         for (let j = 0; j < size; j++) {
           const geometry = new THREE.SphereGeometry(0.08, 16, 16);
-          const material = new THREE.MeshPhongMaterial({ color: 0xe0e0e0 });
+          const material = new THREE.MeshPhongMaterial({ 
+             color: 0xbbbbbb,           // Light gray
+             emissive: 0x444444,        // Subtle glow
+             shininess: 60              // Slight gloss to catch light
+
+
+          });
           const sphere = new THREE.Mesh(geometry, material);
           
           sphere.position.set(i * spacing - halfSize, 0, j * spacing - halfSize);
@@ -353,7 +369,7 @@ export default {
           ]);
           
           geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-          const material = new THREE.LineBasicMaterial({ color: 0x888888 });
+          const material = new THREE.LineBasicMaterial({ color: 0xcccccc });
           const line = new THREE.Line(geometry, material);
           
           gridObject.add(line);
@@ -373,7 +389,7 @@ export default {
           ]);
           
           geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-          const material = new THREE.LineBasicMaterial({ color: 0x888888 });
+          const material = new THREE.LineBasicMaterial({ color: 0xcccccc });
           const line = new THREE.Line(geometry, material);
           
           gridObject.add(line);
@@ -592,18 +608,20 @@ export default {
       const geometry = createCellGeometry(gridPos.corners, height);
       const color = new THREE.Color(cellColor.value);
       const material = new THREE.MeshPhysicalMaterial({
-        color: color,
+        color: new THREE.Color(cellColor.value).clone().lerp(new THREE.Color('#ffffff'), 0.5), // softer tint
         metalness: 0,
-        roughness: 0.85,          // matte surface
-        transmission: 0.9,        // enables transparency
-        thickness: 0.4,           // glass thickness
+        roughness: 2,            // more frosted surface
+        transmission: 0.75,        // high light passing through
+        thickness: 4,            // higher to simulate depth blur
+        ior: 1.3,                  // lower than perfect glass
         transparent: true,
-        opacity: 1,
-        ior: 1.2,                 // index of refraction
-        reflectivity: 0.1,
-        clearcoat: 1.0,
-        clearcoatRoughness: 0.1,
+        opacity: 1.0,              // full opacity, controlled by transmission
+        reflectivity: 0.15,
+        clearcoat: 0.1,
+        clearcoatRoughness: 0.5,
+        envMapIntensity: 1.0
       });
+
 
       
       const mesh = new THREE.Mesh(geometry, material);
@@ -1231,7 +1249,7 @@ input[type="color"] {
   border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: 6px;
   padding: 0;
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: rgba(138, 138, 138, 0.05);
   cursor: pointer;
 }
 
@@ -1273,13 +1291,13 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .arctic-active {
-  background-color: #ff8819 !important;
-  box-shadow: 0 0 10px rgba(0, 188, 212, 0.5);
+  background-color: rgba(255, 255, 255, 0.3) !important;
+  box-shadow: 0 0 10px #727272;
   color: white;
 }
 
 .arctic-active:hover {
-  background-color: #0097a7 !important;
+  background-color: rgba(255, 255, 255, 0.3)!important;
 }
 
 .ai-controls,

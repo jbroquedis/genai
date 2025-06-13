@@ -3,7 +3,7 @@
     <div class="processing-modal">
       <!-- Header -->
       <div class="modal-header">
-        <h3>Generating AI Building</h3>
+        <h3>Thinking...</h3>
       </div>
       
       <!-- Progress Content -->
@@ -31,7 +31,7 @@
               'completed': currentStepIndex > 0 
             }"
           >
-            <div class="step-icon">📸</div>
+            <div class="step-icon">🕛</div>
             <span>Capturing snapshot</span>
           </div>
           
@@ -42,7 +42,7 @@
               'completed': currentStepIndex > 1 
             }"
           >
-            <div class="step-icon">🤖</div>
+            <div class="step-icon">🕒</div>
             <span>Processing with AI</span>
           </div>
           
@@ -53,7 +53,7 @@
               'completed': currentStepIndex > 2 
             }"
           >
-            <div class="step-icon">✨</div>
+            <div class="step-icon">🕧</div>
             <span>Generating result</span>
           </div>
           
@@ -64,7 +64,7 @@
               'completed': currentStepIndex > 3 
             }"
           >
-            <div class="step-icon">✅</div>
+            <div class="step-icon">🕘</div>
             <span>Complete!</span>
           </div>
         </div>
@@ -83,16 +83,16 @@
         <!-- Tips -->
         <div class="processing-tips">
           <div class="tip" v-show="currentStepIndex === 0">
-            💡 <strong>Tip:</strong> Arctic mode provides the cleanest input for AI processing
+             <strong>Tip:</strong> Arctic mode provides the cleanest input for AI processing
           </div>
           <div class="tip" v-show="currentStepIndex === 1">
-            💡 <strong>Tip:</strong> Complex designs may take longer to process
+             <strong>Tip:</strong> Complex designs may take longer to process
           </div>
           <div class="tip" v-show="currentStepIndex === 2">
-            💡 <strong>Tip:</strong> The AI is creating realistic architectural details
+             <strong>Tip:</strong> The AI is creating realistic architectural details
           </div>
           <div class="tip" v-show="currentStepIndex === 3">
-            💡 <strong>Success:</strong> Your AI building is ready!
+             <strong>Success:</strong> Your AI building is ready!
           </div>
         </div>
       </div>
@@ -152,51 +152,41 @@ export default {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  backdrop-filter: blur(4px);
 }
 
 .processing-modal {
-  background: white;
-  border-radius: 16px;
-  padding: 0;
-  max-width: 500px;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border-radius: 20px;
+  padding: 24px 32px;
+  max-width: 480px;
   width: 90%;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 6px 30px rgba(0, 0, 0, 0.2);
   overflow: hidden;
-  animation: modalAppear 0.3s ease-out;
-}
-
-@keyframes modalAppear {
-  from {
-    opacity: 0;
-    transform: scale(0.9) translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-
-.modal-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  padding: 24px;
+  font-family: 'Inter', sans-serif;
   text-align: center;
+  animation: modalAppear 0.3s ease-out;
 }
 
 .modal-header h3 {
   margin: 0;
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 600;
+  color: white;
 }
 
 .modal-content {
-  padding: 32px 24px;
+  padding: 24px 0;
 }
 
 .processing-icon {
@@ -226,202 +216,36 @@ export default {
   position: absolute;
   width: 60px;
   height: 60px;
-  border: 2px solid #667eea;
-  opacity: 0.8;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  opacity: 0.6;
 }
 
-.front { 
-  background: rgba(102, 126, 234, 0.3);
-  transform: rotateY(0deg) translateZ(30px); 
-}
-.back { 
-  background: rgba(118, 75, 162, 0.3);
-  transform: rotateY(180deg) translateZ(30px); 
-}
-.right { 
-  background: rgba(102, 126, 234, 0.4);
-  transform: rotateY(90deg) translateZ(30px); 
-}
-.left { 
-  background: rgba(118, 75, 162, 0.4);
-  transform: rotateY(-90deg) translateZ(30px); 
-}
-.top { 
-  background: rgba(102, 126, 234, 0.5);
-  transform: rotateX(90deg) translateZ(30px); 
-}
-.bottom { 
-  background: rgba(118, 75, 162, 0.5);
-  transform: rotateX(-90deg) translateZ(30px); 
-}
-
-.progress-steps {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 32px;
-  position: relative;
-}
-
-.progress-steps::before {
-  content: '';
-  position: absolute;
-  top: 20px;
-  left: 12.5%;
-  right: 12.5%;
-  height: 2px;
-  background: #e9ecef;
-  z-index: 1;
-}
-
-.step {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  position: relative;
-  z-index: 2;
-  transition: all 0.3s ease;
-}
-
-.step-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
-  background: #f8f9fa;
-  border: 2px solid #e9ecef;
-  transition: all 0.3s ease;
-}
-
-.step span {
-  font-size: 12px;
-  text-align: center;
-  color: #6c757d;
-  font-weight: 500;
-  max-width: 80px;
-  line-height: 1.2;
-}
-
-.step.active .step-icon {
-  background: #667eea;
-  border-color: #667eea;
-  color: white;
-  animation: pulse 2s infinite;
-}
-
-.step.completed .step-icon {
-  background: #28a745;
-  border-color: #28a745;
-  color: white;
-}
-
-.step.active span,
-.step.completed span {
-  color: #495057;
-  font-weight: 600;
-}
-
-@keyframes pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.1); }
-}
-
-.current-stage {
-  text-align: center;
-  margin-bottom: 24px;
-}
-
-.current-stage p {
-  margin: 0 0 16px 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: #495057;
-}
+.front  { background: rgba(255,255,255,0.08); transform: rotateY(0deg) translateZ(30px); }
+.back   { background: rgba(255,255,255,0.08); transform: rotateY(180deg) translateZ(30px); }
+.right  { background: rgba(255,255,255,0.1);  transform: rotateY(90deg) translateZ(30px); }
+.left   { background: rgba(255,255,255,0.1);  transform: rotateY(-90deg) translateZ(30px); }
+.top    { background: rgba(255,255,255,0.12); transform: rotateX(90deg) translateZ(30px); }
+.bottom { background: rgba(255,255,255,0.12); transform: rotateX(-90deg) translateZ(30px); }
 
 .progress-bar {
   width: 100%;
-  height: 8px;
-  background: #e9ecef;
+  height: 6px;
+  background: rgba(255,255,255,0.08);
   border-radius: 4px;
   overflow: hidden;
+  margin-top: 12px;
 }
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #667eea, #764ba2);
+  background: linear-gradient(90deg, #ffffff88, #ffffffcc);
   border-radius: 4px;
   transition: width 0.5s ease;
-  animation: shimmer 2s infinite;
-}
-
-@keyframes shimmer {
-  0% { background-position: -200px 0; }
-  100% { background-position: 200px 0; }
-}
-
-.processing-tips {
-  background: #f8f9fa;
-  border-radius: 12px;
-  padding: 16px;
-  border-left: 4px solid #667eea;
-}
-
-.tip {
-  font-size: 14px;
-  line-height: 1.5;
-  color: #495057;
-  animation: fadeInUp 0.5s ease;
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 .modal-footer {
-  background: #f8f9fa;
-  padding: 16px 24px;
-  text-align: center;
-  border-top: 1px solid #e9ecef;
-}
-
-.modal-footer small {
-  color: #6c757d;
+  margin-top: 16px;
   font-size: 12px;
-}
-
-/* Responsive Design */
-@media (max-width: 480px) {
-  .processing-modal {
-    width: 95%;
-    margin: 20px;
-  }
-  
-  .progress-steps {
-    flex-wrap: wrap;
-    gap: 16px;
-    justify-content: center;
-  }
-  
-  .progress-steps::before {
-    display: none;
-  }
-  
-  .step {
-    flex-basis: 45%;
-  }
-  
-  .step span {
-    max-width: none;
-  }
+  color: rgba(255, 255, 255, 0.5);
 }
 </style>

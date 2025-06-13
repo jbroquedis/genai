@@ -2,7 +2,7 @@
   <div class="comparison-slider">
     <!-- Header -->
     <div class="comparison-header">
-      <h2>AI Generation Result</h2>
+      <h2>Generated Bldg</h2>
       <button @click="$emit('back-to-editor')" class="back-btn">
         ← Back to Editor
       </button>
