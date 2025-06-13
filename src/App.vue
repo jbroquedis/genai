@@ -95,7 +95,7 @@ export default {
   text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
 }
 .gradient-text {
-  background: linear-gradient(135deg,#fa6400 0%, #cacaca 100%);
+  background: linear-gradient(135deg,#000000 0%, #cacaca 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
