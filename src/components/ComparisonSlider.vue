@@ -258,22 +258,24 @@ export default {
 }
 
 .image-comparison {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  padding: 20px;
-  gap: 20px;
+  flex-grow: 0;
+  flex-shrink: 0;
+  height: auto;
 }
+
+
+
 
 .image-container {
   position: relative;
-  flex: 1;
+  height: 600px; /* 👈 your fixed desired height */
   background: white;
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   cursor: grab;
 }
+
 
 .image-container:active {
   cursor: grabbing;
@@ -283,16 +285,23 @@ export default {
   position: absolute;
   top: 0;
   left: 0;
-  width: 100%;
   height: 100%;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .image-layer img {
-  width: 100%;
-  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
   object-fit: contain;
   display: block;
+  margin: 0 auto;
+  background-color: white; /* Avoid black fill from transparent images */
 }
+
+
 
 .before-layer {
   z-index: 1;
@@ -425,8 +434,8 @@ export default {
 
 .download-btn {
   padding: 12px 24px;
-  background: #007bff;
-  color: white;
+  background: #e6e6e6;
+  color: rgb(255, 255, 255);
   border: none;
   border-radius: 8px;
   cursor: pointer;

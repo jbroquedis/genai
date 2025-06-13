@@ -2,7 +2,7 @@
   <div class="grid-container">
     <!-- Main 3D Canvas -->
     <div id="canvas-container" ref="canvasContainer" v-show="currentView === 'editor'"></div>
-    
+
     <!-- Comparison View -->
     <div v-if="currentView === 'comparison'" class="comparison-container">
       <ComparisonSlider 
@@ -14,56 +14,43 @@
 
     <!-- Processing Modal -->
     <ProcessingModal v-if="isProcessing" :stage="processingStage" />
-    
-    <!-- Controls -->
+
+    <!-- Unified Controls -->
     <div class="controls">
       <button @click="resetGrid">Reset Grid</button>
 
-      <div style="display: flex; align-items: center; gap: 8px;">
-        <label>Grid Size: {{ gridSize }}x{{ gridSize }}</label>
-        <input type="range" min="2" max="20" v-model.number="gridSize" @change="regenerateGrid" />
-      </div>
+      <label>Grid Size: {{ gridSize }}x{{ gridSize }}</label>
+      <input type="range" min="2" max="20" v-model.number="gridSize" @change="regenerateGrid" />
 
-      <div style="display: flex; align-items: center; gap: 8px;">
-        <label for="colorPicker">Cell Color:</label>
-        <input type="color" id="colorPicker" v-model="cellColor" @change="updateCellColors" />
-      </div>
+      <label for="colorPicker">Cell Color:</label>
+      <input type="color" id="colorPicker" v-model="cellColor" @change="updateCellColors" />
 
-      <div>
-        <button @click="createParallelLine">Create Parallel Line</button>
-      </div>
+      <!-- <button @click="createParallelLine">Create Parallel Line</button> -->
 
-      <div>
-        <button @click="toggleArcticMode" :class="{ 'arctic-active': arcticMode }">
-          {{ arcticMode ? 'Exit Arctic Mode' : 'Arctic Mode' }}
-        </button>
-      </div>
+      <button @click="toggleArcticMode" :class="{ 'arctic-active': arcticMode }">
+        {{ arcticMode ? 'Exit Arctic Mode' : 'Arctic Mode' }}
+      </button>
 
-      <!-- AI Generation -->
-      <div class="ai-controls">
-        <input 
-          v-model="aiPrompt" 
-          type="text" 
-          placeholder="Enter architectural style prompt..."
-          class="prompt-input"
-        />
-        <button 
-          @click="generateAIBuilding" 
-          :disabled="isProcessing || Object.keys(cellsMap).length === 0"
-          class="generate-btn"
-        >
-          {{ isProcessing ? 'Processing...' : 'Generate AI Building' }}
-        </button>
-      </div>
+      <input 
+        v-model="aiPrompt" 
+        type="text" 
+        placeholder="Enter architectural style prompt..."
+        class="prompt-input"
+      />
+      <button 
+        @click="generateAIBuilding" 
+        :disabled="isProcessing || Object.keys(cellsMap).length === 0"
+        class="generate-btn"
+      >
+        {{ isProcessing ? 'Processing...' : 'Generate AI Building' }}
+      </button>
 
-      <!-- Export Controls -->
-      <div class="export-controls">
-        <button @click="downloadSnapshot">Download Image</button>
-        <button @click="downloadOBJ" :disabled="Object.keys(cellsMap).length === 0">Download 3D Model</button>
-      </div>
+      <button @click="downloadSnapshot">Download Image</button>
+      <button @click="downloadOBJ" :disabled="Object.keys(cellsMap).length === 0">Download 3D Model</button>
     </div>
   </div>
 </template>
+
 
 <script>
 import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue';
@@ -86,7 +73,7 @@ export default {
     const gridSize = ref(10);
     const cellColor = ref('#ffffff');
     const arcticMode = ref(false);
-    const aiPrompt = ref('modern architectural building, clean lines, contemporary design');
+    const aiPrompt = ref('prompt . . .');
     const currentView = ref('editor');
     const isProcessing = ref(false);
     const processingStage = ref('');
@@ -604,11 +591,20 @@ export default {
       
       const geometry = createCellGeometry(gridPos.corners, height);
       const color = new THREE.Color(cellColor.value);
-      const material = new THREE.MeshPhongMaterial({
+      const material = new THREE.MeshPhysicalMaterial({
         color: color,
+        metalness: 0,
+        roughness: 0.85,          // matte surface
+        transmission: 0.9,        // enables transparency
+        thickness: 0.4,           // glass thickness
         transparent: true,
-        opacity: 0.7
+        opacity: 1,
+        ior: 1.2,                 // index of refraction
+        reflectivity: 0.1,
+        clearcoat: 1.0,
+        clearcoatRoughness: 0.1,
       });
+
       
       const mesh = new THREE.Mesh(geometry, material);
       scene.add(mesh);
@@ -1144,7 +1140,8 @@ label {
   font-family: 'Inter', sans-serif;
   font-size: 14px;
   font-weight: 500;
-  color: rgb(167, 167, 167);
+  color: rgba(255, 255, 255, 0.85);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
 
 .grid-container {
@@ -1154,12 +1151,7 @@ label {
   width: 100%;
 }
 
-#canvas-container {
-  flex-grow: 1;
-  min-height: 500px;
-  position: relative;
-}
-
+#canvas-container,
 .comparison-container {
   flex-grow: 1;
   min-height: 500px;
@@ -1167,120 +1159,135 @@ label {
 }
 
 .controls {
-  padding: 10px;
-  background-color: #f5f5f5;
   display: flex;
   flex-wrap: wrap;
-  gap: 20px;
   align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 16px 24px;
+  padding-bottom: 40px;
+  background: linear-gradient(
+  to top,
+  rgba(255, 255, 255, 0.15) 0%,
+  rgba(255, 255, 255, 0.05) 40%,
+  rgba(255, 255, 255, 0) 100%
+  
+);
+
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-top: none;
+  box-shadow: 0 -2px 20px rgba(0, 0, 0, 0.05);
+  z-index: 10;
 }
 
-.ai-controls {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
+button,
+.generate-btn {
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 10px;
+  color: white;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+button:hover:not(:disabled),
+.generate-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.15);
+}
+
+button:disabled,
+.generate-btn:disabled {
+  background: rgba(200, 200, 200, 0.2);
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .prompt-input {
   padding: 8px 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  min-width: 200px;
-  font-size: 14px;
-}
-
-.generate-btn {
-  padding: 8px 16px;
-  background-color: #4CAF50;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.1);
   color: white;
-  border: none;
-  border-radius: 4px;
+  min-width: 240px;
+  font-size: 14px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+input[type="color"] {
+  width: 40px;
+  height: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 6px;
+  padding: 0;
+  background-color: rgba(255, 255, 255, 0.05);
   cursor: pointer;
-  font-weight: 600;
-  transition: background-color 0.3s ease;
-}
-
-.generate-btn:hover:not(:disabled) {
-  background-color: #45a049;
-}
-
-.generate-btn:disabled {
-  background-color: #cccccc;
-  cursor: not-allowed;
-}
-
-.export-controls {
-  display: flex;
-  gap: 10px;
-}
-
-button {
-  padding: 8px 16px;
-  background-color: #ffffff;
-  color: rgb(167, 167, 167);
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-button:hover {
-  background-color: rgb(223, 223, 223);
-}
-
-.arctic-active {
-  background-color: #ff8819 !important;
-  box-shadow: 0 0 10px rgba(0, 188, 212, 0.5);
-}
-
-.arctic-active:hover {
-  background-color: #0097a7 !important;
 }
 
 input[type="range"] {
   -webkit-appearance: none;
   background: transparent;
+  height: 20px;
+  cursor: pointer;
 }
 
 input[type="range"]::-webkit-slider-runnable-track {
-  background: #ddd;
+  background: rgba(255, 255, 255, 0.3);
   height: 6px;
   border-radius: 3px;
 }
 
 input[type="range"]::-moz-range-track {
-  background: #ddd;
+  background: rgba(255, 255, 255, 0.3);
   height: 6px;
   border-radius: 3px;
 }
 
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
-  background: #ddd;
+  background: white;
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  cursor: pointer;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.1);
   margin-top: -5px;
 }
 
 input[type="range"]::-moz-range-thumb {
-  background: #ddd;
+  background: white;
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  cursor: pointer;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.1);
 }
 
-input[type="color"] {
-  width: 40px;
-  height: 30px;
-  border: 2px solid #aaa;
-  border-radius: 4px;
-  padding: 0;
-  background-color: transparent;
-  cursor: pointer;
+.arctic-active {
+  background-color: #ff8819 !important;
+  box-shadow: 0 0 10px rgba(0, 188, 212, 0.5);
+  color: white;
+}
+
+.arctic-active:hover {
+  background-color: #0097a7 !important;
+}
+
+.ai-controls,
+.export-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 @media (max-width: 768px) {
@@ -1288,13 +1295,16 @@ input[type="color"] {
     flex-direction: column;
     align-items: stretch;
   }
-  
-  .ai-controls {
+
+  .ai-controls,
+  .export-controls {
     flex-direction: column;
+    width: 100%;
   }
-  
+
   .prompt-input {
     min-width: 100%;
   }
 }
 </style>
+

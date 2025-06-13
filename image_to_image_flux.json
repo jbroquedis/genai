@@ -302,7 +302,7 @@
   },
   "118": {
     "inputs": {
-      "upscale_method": "nearest-exact",
+      "upscale_method": "bicubic",
       "scale_by": 2.0000000000000004,
       "image": [
         "91",
