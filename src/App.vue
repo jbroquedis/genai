@@ -55,8 +55,8 @@ export default {
   -moz-osx-font-smoothing: grayscale;
   height: 100vh;
 
-  background: radial-gradient(circle at top left, rgba(0, 0, 0, 0.3) 0%, rgba(240, 240, 240, 0.1) 100%),
-              linear-gradient(135deg, #e0e0e0 0%, #f5f5f5 100%);
+  /* Smooth gradient that transitions within the topbar area (0-20%) */
+  background: linear-gradient(to bottom, #9f9f9f 0%, #ffffff 9%, #ffffff 95%, #9f9f9f 100%);
   backdrop-filter: blur(60px);
   -webkit-backdrop-filter: blur(60px);
 }
@@ -68,17 +68,26 @@ export default {
   flex-direction: column;
 }
 
+
+
 .app-header {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.2);
   backdrop-filter: blur(20px) saturate(150%);
-  -webkit-backdrop-filter: blur(20px) saturate(150%);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  border-radius: 16px;
+  -webkit-backdrop-filter: blur(20px) saturate(50%);
+  border: none;
+  border-radius: 25px / 30px;
   margin: 20px auto;
   max-width: 90%;
   padding: 20px 40px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.2),
+    inset 6px -6px 6px rgba(255, 255, 255, 0.4),
+    inset -6px 6px 6px rgba(255, 255, 255, 0.4),
+    inset 6px -6px 6px rgba(255, 255, 255, 0.4),
+    inset -6px 6px 6px rgba(255, 255, 255, 0.4);
+  position: relative;
 }
+
 
 
 .header-content {
@@ -95,7 +104,7 @@ export default {
   text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
 }
 .gradient-text {
-  background: linear-gradient(135deg,#000000 0%, #cacaca 100%);
+  background: linear-gradient(135deg,#000000 0%, #cacaca 70%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -103,8 +112,8 @@ export default {
 }
 
 .app-subtitle {
-  color: rgba(255, 255, 255, 0.7);
-  text-shadow: 0 0 6px rgba(0, 0, 0, 0.45);
+  color: rgba(172, 172, 172, 0.7);
+  text-shadow: 0 0 6px rgba(255, 255, 255, 0.45);
 }
 
 .main-content {

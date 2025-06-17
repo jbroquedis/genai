@@ -609,17 +609,17 @@ export default {
       const color = new THREE.Color(cellColor.value);
       const material = new THREE.MeshPhysicalMaterial({
         color: new THREE.Color(cellColor.value).clone().lerp(new THREE.Color('#ffffff'), 0.5), // softer tint
-        metalness: 0,
-        roughness: 2,            // more frosted surface
-        transmission: 0.75,        // high light passing through
+        metalness: 0.1,
+        roughness: 0.35,            // more frosted surface
+        transmission: 0.85,        // high light passing through
         thickness: 4,            // higher to simulate depth blur
         ior: 1.3,                  // lower than perfect glass
         transparent: true,
-        opacity: 1.0,              // full opacity, controlled by transmission
-        reflectivity: 0.15,
+        opacity: 0.6,              // full opacity, controlled by transmission
+        reflectivity: 0.4,
         clearcoat: 0.1,
         clearcoatRoughness: 0.5,
-        envMapIntensity: 1.0
+        envMapIntensity: 0.5
       });
 
 
@@ -1248,45 +1248,53 @@ label {
   align-items: center;
   justify-content: center;
   gap: 16px;
-  padding: 16px 24px;
-  padding-bottom: 40px;
+  padding: 50px 24px;
+  padding-bottom: 30px;
   background: linear-gradient(
   to top,
-  rgba(255, 255, 255, 0.15) 0%,
-  rgba(255, 255, 255, 0.05) 40%,
-  rgba(255, 255, 255, 0) 100%
+  rgb(216, 216, 216) 0%,
+  rgb(255, 255, 255) 55%
   
 );
 
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   border-top: none;
-  box-shadow: 0 -2px 20px rgba(0, 0, 0, 0.05);
   z-index: 10;
 }
 
 button,
 .generate-btn {
   padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  border-radius: 10px;
-  color: white;
-  font-weight: 500;
+  background: rgba(255, 255, 255, 0.146);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(50%);
+  border: none;
+  border-radius: 30px / 30px;
+  color: #ababab;
+  font-weight: 400;
   font-size: 14px;
   cursor: pointer;
-  backdrop-filter: blur(12px) saturate(150%);
-  -webkit-backdrop-filter: blur(12px) saturate(150%);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  box-shadow: 
+    1px 1px 1px rgba(0, 0, 0, 0.2),
+    inset 3px -3px 3px rgba(255, 255, 255, 0.4),
+    inset -3px 3px 3px rgba(255, 255, 255, 0.4),
+    inset 3px -3px 3px rgba(255, 255, 255, 0.4),
+    inset -3px 3px 3px rgba(255, 255, 255, 0.4);
   transition: all 0.3s ease;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  position: relative;
 }
 
 button:hover:not(:disabled),
 .generate-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.094);
   transform: translateY(-1px);
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.15);
+  box-shadow: 
+    0 3px 12px rgba(0, 0, 0, 0.25),
+    inset 2px -2px 2px rgba(255, 255, 255, 0.5),
+    inset -2px 2px 2px rgba(255, 255, 255, 0.5),
+    inset 2px -2px 2px rgba(255, 255, 255, 0.5),
+    inset -2px 2px 2px rgba(255, 255, 255, 0.5);
 }
 
 button:disabled,
