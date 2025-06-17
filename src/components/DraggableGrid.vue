@@ -1097,6 +1097,9 @@ export default {
         const result = await processWithComfyUI(snapshot);
         generatedImage.value = result;
         
+        // ADD THIS LINE - store in gallery
+        localStorage.setItem('isogen_current_prompt', aiPrompt.value);
+        
         processingStage.value = 'Complete!';
         
         setTimeout(() => {
@@ -1344,8 +1347,8 @@ input[type="range"]::-moz-range-track {
   background: rgba(255, 255, 255, 0.3);
   height: 6px;
   border-radius: 3px;
+  border: none; /* Add this */
 }
-
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   background: white;

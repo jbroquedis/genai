@@ -2,7 +2,7 @@
   <div class="comparison-slider">
     <!-- Header -->
     <div class="comparison-header">
-      <h2>Generated Bldg</h2>
+      <h2></h2>
       <button @click="$emit('back-to-editor')" class="back-btn">
         ← Back to Editor
       </button>
@@ -11,19 +11,17 @@
     <!-- Image Comparison Container -->
     <div class="image-comparison" ref="comparisonContainer">
       <div class="image-container">
-        <!-- Before Image (Base Layer) -->
+        <!-- Before Image (Base Layer) - Now shows AI Generated on left -->
         <div class="image-layer before-layer">
-          <img :src="beforeImage" alt="Before" @load="onImageLoad" />
-          <div class="image-label before-label">Original Design</div>
+          <img :src="afterImage" alt="AI Generated" @load="onImageLoad" />
         </div>
         
-        <!-- After Image (Clipped Layer) -->
+        <!-- After Image (Clipped Layer) - Now shows Original on right -->
         <div 
           class="image-layer after-layer" 
           :style="{ clipPath: `inset(0 ${100 - sliderValue}% 0 0)` }"
         >
-          <img :src="afterImage" alt="After" @load="onImageLoad" />
-          <div class="image-label after-label">AI Generated</div>
+          <img :src="beforeImage" alt="Original" @load="onImageLoad" />
         </div>
         
         <!-- Divider Line -->
@@ -48,8 +46,8 @@
           @input="onSliderChange"
         />
         <div class="slider-labels">
-          <span>Original</span>
           <span>AI Generated</span>
+          <span>Original</span>
         </div>
       </div>
     </div>
@@ -57,13 +55,13 @@
     <!-- Download Controls -->
     <div class="download-controls">
       <button @click="downloadImage(beforeImage, 'original')" class="download-btn">
-        📥 Download Original
+        Download Original
       </button>
       <button @click="downloadImage(afterImage, 'ai-generated')" class="download-btn">
-        📥 Download AI Result
+        Download AI gen
       </button>
       <button @click="downloadComparison" class="download-btn">
-        📥 Download Comparison
+        Download Comparison
       </button>
     </div>
     
@@ -147,8 +145,9 @@ export default {
         canvas.width = beforeImg.width * 2;
         canvas.height = beforeImg.height;
         
-        ctx.drawImage(beforeImg, 0, 0);
-        ctx.drawImage(afterImg, beforeImg.width, 0);
+        // Now AI Generated is on left, Original on right to match the flipped display
+        ctx.drawImage(afterImg, 0, 0);
+        ctx.drawImage(beforeImg, beforeImg.width, 0);
         
         ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
         ctx.fillRect(10, 10, 120, 30);
@@ -156,8 +155,8 @@ export default {
         
         ctx.fillStyle = 'white';
         ctx.font = '16px Arial';
-        ctx.fillText('Original', 20, 30);
-        ctx.fillText('AI Generated', beforeImg.width + 20, 30);
+        ctx.fillText('AI Generated', 20, 30);
+        ctx.fillText('Original', beforeImg.width + 20, 30);
         
         const dataURL = canvas.toDataURL('image/png');
         downloadImage(dataURL, 'comparison');
@@ -171,12 +170,14 @@ export default {
     let isDragging = false;
     
     const handleMouseDown = (event) => {
+      event.preventDefault(); // Prevent text selection
       isDragging = true;
       updateSliderFromPosition(event);
     };
     
     const handleMouseMove = (event) => {
       if (isDragging) {
+        event.preventDefault(); // Prevent text selection during drag
         updateSliderFromPosition(event);
       }
     };
@@ -219,11 +220,58 @@ export default {
 </script>
 
 <style scoped>
+/* Updated button styles with glass morphism effect */
+button,
+.back-btn,
+.download-btn {
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.557);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(50%);
+  border: none;
+  border-radius: 30px / 30px;
+  color: #676767;
+  font-weight: 400;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 
+    0px 0px 2px rgba(0, 0, 0, 0.2),
+    inset 4px -4px 4px rgba(255, 255, 255, 0.4),
+    inset -4px 4px 4px rgba(255, 255, 255, 0.4),
+    inset 4px -4px 4px rgba(255, 255, 255, 0.4),
+    inset -4px 4px 4px rgba(255, 255, 255, 0.4);
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+button:hover:not(:disabled),
+.back-btn:hover:not(:disabled),
+.download-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+  border-radius: 38px 32px 35px 40px / 42px 28px 39px 34px;
+  box-shadow: 
+    0 0px 4px rgba(0, 0, 0, 0.25),
+    inset 7px -7px 7px rgba(255, 255, 255, 0.5),
+    inset -7px 7px 7px rgba(255, 255, 255, 0.5),
+    inset 7px -7px 7px rgba(255, 255, 255, 0.5),
+    inset -7px 7px 7px rgba(255, 255, 255, 0.5);
+}
+
+button:disabled,
+.back-btn:disabled,
+.download-btn:disabled {
+  background: rgba(200, 200, 200, 0.2);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 .comparison-slider {
   display: flex;
   flex-direction: column;
   height: 100%;
   background: #f8f9fa;
+  user-select: none; /* Prevent text selection on the entire component */
 }
 
 .comparison-header {
@@ -242,40 +290,26 @@ export default {
   font-weight: 600;
 }
 
-.back-btn {
-  padding: 10px 20px;
-  background: #6c757d;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 16px;
-  transition: background-color 0.3s ease;
-}
-
-.back-btn:hover {
-  background: #5a6268;
-}
-
 .image-comparison {
   flex-grow: 0;
   flex-shrink: 0;
   height: auto;
 }
 
-
-
-
 .image-container {
   position: relative;
-  height: 600px; /* 👈 your fixed desired height */
+  height: 600px; 
   background: white;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  outline: none;
+  box-shadow: 0 0px 0px rgba(0, 0, 0, 0.1);
   cursor: grab;
+  user-select: none; /* Prevent text selection */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 }
-
 
 .image-container:active {
   cursor: grabbing;
@@ -290,6 +324,10 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
+  user-select: none; /* Prevent text selection */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 }
 
 .image-layer img {
@@ -298,10 +336,14 @@ export default {
   object-fit: contain;
   display: block;
   margin: 0 auto;
-  background-color: white; /* Avoid black fill from transparent images */
+  background-color: white;
+  user-select: none; /* Prevent image selection */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  -webkit-user-drag: none; /* Prevent image dragging */
+  pointer-events: none; /* Make images non-interactive */
 }
-
-
 
 .before-layer {
   z-index: 1;
@@ -427,30 +469,9 @@ export default {
   gap: 15px;
   justify-content: center;
   padding: 20px;
-  background: white;
-  border-radius: 12px;
+  background: rgb(158, 158, 158);
+  border-radius: 0px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-}
-
-.download-btn {
-  padding: 12px 24px;
-  background: #e6e6e6;
-  color: rgb(255, 255, 255);
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 600;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.download-btn:hover {
-  background: #0056b3;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
 }
 
 .image-info {
@@ -458,18 +479,18 @@ export default {
   gap: 30px;
   justify-content: center;
   padding: 15px;
-  background: white;
-  border-radius: 12px;
+  background: rgb(158, 158, 158);
+  border-radius: 0px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
   font-size: 14px;
 }
 
 .info-item {
-  color: #666;
+  color: #ffffff;
 }
 
 .info-item strong {
-  color: #2c3e50;
+  color: #ffffff;
 }
 
 @media (max-width: 768px) {
@@ -482,10 +503,6 @@ export default {
   .download-controls {
     flex-direction: column;
     gap: 10px;
-  }
-  
-  .download-btn {
-    justify-content: center;
   }
   
   .image-info {
