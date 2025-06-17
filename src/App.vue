@@ -38,7 +38,7 @@ export default {
 }
 
 .glass-panel {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.15);
   backdrop-filter: blur(24px) saturate(160%);
   -webkit-backdrop-filter: blur(24px) saturate(160%);
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -55,7 +55,7 @@ export default {
   -moz-osx-font-smoothing: grayscale;
   height: 100vh;
 
-  background: radial-gradient(circle at top left, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.1) 100%),
+  background: radial-gradient(circle at top left, rgba(0, 0, 0, 0.3) 0%, rgba(240, 240, 240, 0.1) 100%),
               linear-gradient(135deg, #e0e0e0 0%, #f5f5f5 100%);
   backdrop-filter: blur(60px);
   -webkit-backdrop-filter: blur(60px);

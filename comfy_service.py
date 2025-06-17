@@ -131,12 +131,12 @@ def update_workflow_for_processing(workflow, image_filename, prompt_text):
             print(f"✅ Updated image input: {image_filename}")
         else:
             print("⚠️ LoadImage node (100) not found in workflow")
-            
+
         # Update positive prompt (node 98 - CLIPTextEncode)
         if "98" in updated_workflow:
             original_prompt = updated_workflow["98"]["inputs"]["text"]
             # Enhance the prompt with architectural keywords
-            enhanced_prompt = f"ismtrcbldng, hyperrealistic photograph, white background, plain white background, {prompt_text}, isometric view, architectural visualization, detailed building, {original_prompt}"
+            enhanced_prompt = f"ismtrcbldng, hyperrealistic photograph, white background, plain white background,  isometric view, architectural visualization, detailed building, {prompt_text}, {original_prompt}"
             updated_workflow["98"]["inputs"]["text"] = enhanced_prompt
             print(f"✅ Updated prompt: {enhanced_prompt[:100]}...")
         else:

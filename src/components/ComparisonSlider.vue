@@ -393,7 +393,7 @@ export default {
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: #4CAF50;
+  background: #5c5c5c;
   cursor: pointer;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
   transition: transform 0.2s ease;
@@ -407,7 +407,7 @@ export default {
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: #4CAF50;
+  background: #5c5c5c;
   cursor: pointer;
   border: none;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);

@@ -34,7 +34,7 @@
       <input 
         v-model="aiPrompt" 
         type="text" 
-        placeholder="Enter architectural style prompt..."
+        placeholder="Describe your building..."
         class="prompt-input"
       />
       <button 
@@ -73,7 +73,7 @@ export default {
     const gridSize = ref(10);
     const cellColor = ref('#ffffff');
     const arcticMode = ref(false);
-    const aiPrompt = ref('prompt . . .');
+    const aiPrompt = ref('');
     const currentView = ref('editor');
     const isProcessing = ref(false);
     const processingStage = ref('');
@@ -958,7 +958,7 @@ export default {
     const regenerateGrid = () => {
       resetGrid();
     };
-
+//UPDATED FUCNTION
     const captureArcticSnapshot = async () => {
       const wasInArcticMode = arcticMode.value;
       
@@ -971,9 +971,76 @@ export default {
       const previewWasVisible = previewCube.visible;
       previewCube.visible = false;
       
-      renderer.render(scene, camera);
-      const dataURL = renderer.domElement.toDataURL('image/png', 1.0);
+      // Store original renderer size
+      const originalWidth = renderer.domElement.width;
+      const originalHeight = renderer.domElement.height;
       
+      // Create temporary 1024x1024 canvas for snapshot
+      const snapshotCanvas = document.createElement('canvas');
+      snapshotCanvas.width = 1024;
+      snapshotCanvas.height = 1024;
+      
+      // Create temporary renderer for snapshot
+      const snapshotRenderer = new THREE.WebGLRenderer({ 
+        canvas: snapshotCanvas,
+        antialias: true,
+        preserveDrawingBuffer: true 
+      });
+      snapshotRenderer.setSize(1024, 1024);
+      snapshotRenderer.setClearColor(0xffffff, 1); // White background
+      
+      // Create camera specifically for 1024x1024 centered capture
+      const snapshotCamera = camera.clone();
+      
+      // Calculate bounds of the scene content
+      const box = new THREE.Box3();
+      
+      // Add all voxel meshes to bounding box calculation
+      Object.values(cellsMap.value).forEach(cell => {
+        if (cell.mesh && cell.mesh.visible) {
+          box.expandByObject(cell.mesh);
+        }
+      });
+      
+      // Add arctic mesh if present
+      if (arcticMesh && arcticMesh.visible) {
+        box.expandByObject(arcticMesh);
+      }
+      
+      // Calculate center and size of content
+      const center = box.getCenter(new THREE.Vector3());
+      const size = box.getSize(new THREE.Vector3());
+      const maxDim = Math.max(size.x, size.y, size.z);
+      
+      // Position camera to fit content with some padding
+      const distance = maxDim * 1.5; // Adjust this multiplier for tighter/looser framing
+      
+      // Maintain isometric view angles but adjust for centered content
+      snapshotCamera.position.set(
+        center.x + distance * Math.cos(Math.PI / 4) * Math.cos(Math.atan(1/Math.sqrt(2))),
+        center.y + distance * Math.sin(Math.atan(1/Math.sqrt(2))),
+        center.z + distance * Math.sin(Math.PI / 4) * Math.cos(Math.atan(1/Math.sqrt(2)))
+      );
+      
+      snapshotCamera.lookAt(center);
+      
+      // Update camera projection for square aspect ratio
+      const frustumSize = maxDim * 2; // Adjust for tighter/looser crop
+      snapshotCamera.left = -frustumSize / 2;
+      snapshotCamera.right = frustumSize / 2;
+      snapshotCamera.top = frustumSize / 2;
+      snapshotCamera.bottom = -frustumSize / 2;
+      snapshotCamera.updateProjectionMatrix();
+      
+      // Render the snapshot
+      snapshotRenderer.render(scene, snapshotCamera);
+      const dataURL = snapshotCanvas.toDataURL('image/png', 1.0);
+      
+      // Cleanup
+      snapshotRenderer.dispose();
+      snapshotCanvas.remove();
+      
+      // Restore preview cube visibility
       previewCube.visible = previewWasVisible;
       
       if (!wasInArcticMode) {
@@ -982,7 +1049,6 @@ export default {
       
       return dataURL;
     };
-    
     const processWithComfyUI = async (imageDataURL) => {
       try {
         const response = await fetch(`${COMFY_API_URL}/api/process-base64`, {

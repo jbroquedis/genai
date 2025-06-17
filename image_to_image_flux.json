@@ -17,7 +17,7 @@
   },
   "92": {
     "inputs": {
-      "text": "context, background",
+      "text": "context, background, color background, grey background", 
       "clip": [
         "99",
         0
@@ -40,11 +40,11 @@
   "95": {
     "inputs": {
       "action": "resize only",
-      "smaller_side": 0,
-      "larger_side": 1024,
+      "smaller_side": 1024,
+      "larger_side": 0,
       "scale_factor": 0,
       "resize_mode": "any",
-      "side_ratio": "4:3",
+      "side_ratio": "1:1",
       "crop_pad_position": 0.5,
       "pad_feathering": 20,
       "pixels": [

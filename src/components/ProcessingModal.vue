@@ -182,17 +182,19 @@ export default {
   margin: 0;
   font-size: 22px;
   font-weight: 600;
-  color: white;
+  color: rgba(51, 51, 51, 0.08);
 }
 
 .modal-content {
   padding: 24px 0;
+  color: rgba(36, 36, 36, 0.08);
 }
 
 .processing-icon {
   display: flex;
   justify-content: center;
   margin-bottom: 32px;
+  color: rgb(59, 59, 59);
 }
 
 .spinner {
@@ -205,6 +207,7 @@ export default {
   height: 60px;
   transform-style: preserve-3d;
   animation: rotateCube 2s infinite linear;
+  color: rgb(100, 100, 100);
 }
 
 @keyframes rotateCube {
@@ -220,17 +223,17 @@ export default {
   opacity: 0.6;
 }
 
-.front  { background: rgba(255,255,255,0.08); transform: rotateY(0deg) translateZ(30px); }
-.back   { background: rgba(255,255,255,0.08); transform: rotateY(180deg) translateZ(30px); }
-.right  { background: rgba(255,255,255,0.1);  transform: rotateY(90deg) translateZ(30px); }
-.left   { background: rgba(255,255,255,0.1);  transform: rotateY(-90deg) translateZ(30px); }
-.top    { background: rgba(255,255,255,0.12); transform: rotateX(90deg) translateZ(30px); }
-.bottom { background: rgba(255,255,255,0.12); transform: rotateX(-90deg) translateZ(30px); }
+.front  { background: rgba(61, 61, 61, 0.08); transform: rotateY(0deg) translateZ(30px); }
+.back   { background: rgba(61, 61, 61, 0.08); transform: rotateY(180deg) translateZ(30px); }
+.right  { background: rgba(61, 61, 61, 0.08);  transform: rotateY(90deg) translateZ(30px); }
+.left   { background: rgba(61, 61, 61, 0.08);  transform: rotateY(-90deg) translateZ(30px); }
+.top    { background: rgba(61, 61, 61, 0.08); transform: rotateX(90deg) translateZ(30px); }
+.bottom { background: rgba(61, 61, 61, 0.08); transform: rotateX(-90deg) translateZ(30px); }
 
 .progress-bar {
   width: 100%;
   height: 6px;
-  background: rgba(255,255,255,0.08);
+  background: rgba(51, 51, 51, 0.08);
   border-radius: 4px;
   overflow: hidden;
   margin-top: 12px;
